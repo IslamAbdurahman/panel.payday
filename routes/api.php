@@ -1,0 +1,13 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
+
+
+Route::any('/hikvision-callback', [\App\Http\Controllers\Hikvision\HikvisionController::class, 'store']);
+
+Route::get('/worker/show_history/{worker}', [\App\Http\Controllers\Worker\WorkerController::class, 'show_history']);
