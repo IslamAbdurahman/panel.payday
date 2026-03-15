@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { LayoutGrid, Building2, Settings, Calendar, CalculatorIcon } from 'lucide-react';
+import { LayoutGrid, Building2, Settings, Clock, BarChart3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export function AppBottomNav() {
@@ -20,12 +20,12 @@ export function AppBottomNav() {
         {
             title: t('sidebar.attendance'), // Davomat
             href: '/attendance',
-            icon: Calendar
+            icon: Clock
         },
         {
             title: t('sidebar.report'), // Report
             href: '/monthly_attendance',
-            icon: CalculatorIcon
+            icon: BarChart3
         },
         {
             title: t('sidebar.profile'), // Oylik

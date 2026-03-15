@@ -16,12 +16,16 @@ import {
     BookOpen,
     Folder,
     LayoutGrid,
-    DollarSign,
-    BadgeDollarSignIcon,
-    Building2,
-    Workflow,
+    Briefcase,
+    Clock,
+    BarChart3,
+    Receipt,
+    HandCoins,
+    Github,
+    Send,
     Users,
-    Calendar, CalculatorIcon
+    Building2,
+    Calendar
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePage } from '@inertiajs/react';
@@ -37,12 +41,12 @@ export function AppSidebar() {
         {
             title: t('sidebar.repository'),
             href: 'https://github.com/islamabdurahman',
-            icon: Folder
+            icon: Github
         },
         {
             title: t('sidebar.telegram'),
             href: 'https://t.me/livelongevity',
-            icon: BookOpen
+            icon: Send
         }
     ];
 
@@ -70,32 +74,32 @@ export function AppSidebar() {
             {
                 title: t('sidebar.worker'),
                 href: '/worker',
-                icon: Workflow
+                icon: Briefcase
             },
             {
                 title: t('sidebar.attendance'),
                 href: '/attendance',
-                icon: Calendar
+                icon: Clock
             },
             {
                 title: t('sidebar.report'),
                 href: '/monthly_attendance',
-                icon: CalculatorIcon
+                icon: BarChart3
             },
             {
                 title: t('sidebar.salary_report'),
                 href: '/salary_report',
-                icon: BadgeDollarSignIcon
+                icon: Receipt
             },
             {
                 title: t('sidebar.salary'),
                 href: '/salary',
-                icon: DollarSign
+                icon: HandCoins
             },
             {
                 title: t('sidebar.salary_payment'),
                 href: '/salary_payment',
-                icon: DollarSign
+                icon: HandCoins
             }
         ];
 
