@@ -120,8 +120,8 @@ class HikvisionAccessEventObserver
 ---------------------------
 Filial: {$worker->branch->name}
 Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
-
-        $telegram = new \Telegram\Bot\Api(env('TELEGRAM_BOT_TOKEN'));
+        $guzzleClient = new \GuzzleHttp\Client(['verify' => false, 'timeout' => 15, 'connect_timeout' => 5]);
+        $telegram = new \Telegram\Bot\Api(env('TELEGRAM_BOT_TOKEN'), false, new \Telegram\Bot\HttpClients\GuzzleHttpClient($guzzleClient));
 
         foreach ($users as $user) {
             try {
