@@ -7,8 +7,6 @@ use App\Models\User\User;
 use App\Models\Worker\Worker;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
-use Telegram\Bot\Api;
-use Telegram\Bot\FileUpload\InputFile;
 
 class HikvisionAccessEventObserver
 {
@@ -123,34 +121,43 @@ class HikvisionAccessEventObserver
 Filial: {$worker->branch->name}
 Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
 
-        // $telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
+        $telegram = new \Telegram\Bot\Api(env('TELEGRAM_BOT_TOKEN'));
 
-        // foreach ($users as $user) {
-        //     $telegram->sendPhoto([
-        //         'chat_id' => $user->telegram_id,
-        //         'photo' => InputFile::create($photoPath),
-        //         'caption' => $caption,
-        //         'parse_mode' => 'HTML',
-        //     ]);
-        // }
+        foreach ($users as $user) {
+            try {
+                $telegram->sendMessage([
+                    'chat_id'    => $user->telegram_id,
+                    'text'       => $caption,
+                    'parse_mode' => 'HTML',
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('sendMessage xatolik (user): ' . $e->getMessage());
+            }
+        }
 
-        // if ($worker->telegram_id) {
-        //     $telegram->sendPhoto([
-        //         'chat_id' => $worker->telegram_id,
-        //         'photo' => InputFile::create($photoPath),
-        //         'caption' => $caption,
-        //         'parse_mode' => 'HTML',
-        //     ]);
-        // }
+        if ($worker->telegram_id) {
+            try {
+                $telegram->sendMessage([
+                    'chat_id'    => $worker->telegram_id,
+                    'text'       => $caption,
+                    'parse_mode' => 'HTML',
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('sendMessage xatolik (worker): ' . $e->getMessage());
+            }
+        }
 
-        // if ($worker->branch && $worker->branch->telegram_group_id) {
-        //     $telegram->sendPhoto([
-        //         'chat_id' => $worker->branch->telegram_group_id,
-        //         'photo' => InputFile::create($photoPath),
-        //         'caption' => $caption,
-        //         'parse_mode' => 'HTML',
-        //     ]);
-        // }
+        if ($worker->branch && $worker->branch->telegram_group_id) {
+            try {
+                $telegram->sendMessage([
+                    'chat_id'    => $worker->branch->telegram_group_id,
+                    'text'       => $caption,
+                    'parse_mode' => 'HTML',
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('sendMessage xatolik (group): ' . $e->getMessage());
+            }
+        }
     }
 
     public function updated(HikvisionAccessEvent $hikvisionAccessEvent): void
