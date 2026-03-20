@@ -12,9 +12,7 @@ class HikvisionAccessEventObserver
 {
     public function created(HikvisionAccessEvent $hikvisionAccessEvent): void
     {
-        if (!$hikvisionAccessEvent->picture) {
-            return;
-        }
+        // Foydalanuvchi qatnovi ro'yxatga olindi (rasm bo'lmasa ham davom etamiz)
 
         $worker = Worker::query()
             ->where('employeeNoString', $hikvisionAccessEvent->employeeNoString)
@@ -36,9 +34,8 @@ class HikvisionAccessEventObserver
             'hikvision/' . $hikvisionAccessEvent->hikvisionAccess->shortSerialNumber . '/' . $hikvisionAccessEvent->picture
         );
 
-        if (!file_exists($photoPath)) {
-            return;
-        }
+        // Rasm fayli mavjudligini tekshirishni olib tashladik, chunki matn yuboramiz
+        \Illuminate\Support\Facades\Log::info("Observer ishga tushdi, xodim: {$worker->name}");
 
         $hikvisionTime = Carbon::parse($hikvisionAccessEvent->hikvisionAccess->dateTime);
 
@@ -120,8 +117,8 @@ class HikvisionAccessEventObserver
 ---------------------------
 Filial: {$worker->branch->name}
 Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
-        $guzzleClient = new \GuzzleHttp\Client(['verify' => false, 'timeout' => 15, 'connect_timeout' => 5]);
-        $telegram = new \Telegram\Bot\Api(env('TELEGRAM_BOT_TOKEN'), false, new \Telegram\Bot\HttpClients\GuzzleHttpClient($guzzleClient));
+
+        $telegram = new \Telegram\Bot\Api(env('TELEGRAM_BOT_TOKEN'));
 
         foreach ($users as $user) {
             try {
