@@ -38,12 +38,11 @@ function telegramlog($text)
     $token = "7763950049:AAFyTjSgv47GC-76zSez6Q9pPzNNYPH6kqA";
     $chat_id = "531110501";
     try {
-        $guzzleClient = new \GuzzleHttp\Client(['verify' => false, 'timeout' => 15, 'connect_timeout' => 5]);
-        $telegram = new \Telegram\Bot\Api($token, false, new \Telegram\Bot\HttpClients\GuzzleHttpClient($guzzleClient));
+        $telegram = new \Telegram\Bot\Api($token);
 
         $telegram->sendMessage([
             'chat_id' => $chat_id,
-            'text' => is_string($text) ? $text : json_encode($text, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+            'text' => json_encode($text, JSON_PRETTY_PRINT),
             'parse_mode' => 'html',
         ]);
 
