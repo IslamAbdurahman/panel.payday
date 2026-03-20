@@ -188,10 +188,6 @@ class HikvisionController extends Controller
                 telegramlog('Hikvision Event:');
                 telegramlog(json_encode($request->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-                $token = "7763950049:AAFyTjSgv47GC-76zSez6Q9pPzNNYPH6kqA";
-                $chat_id = "531110501";
-
-                $telegram = new \Telegram\Bot\Api($token);
                 $filename = '';
                 if ($request->hasFile('Picture')) {
                     $picture = $request->file('Picture');
@@ -200,17 +196,7 @@ class HikvisionController extends Controller
                     $filename = time() . '_' . rand(1, 50) . '_' . $picture->getClientOriginalName();
 
                     // Saqlash
-                    $savedPath = $picture->storeAs("hikvision/$eventData->shortSerialNumber", $filename, 'public'); // 3-chi parametr: 'public'
-
-                    // Faylni to'g'ridan-to'g'ri yuborish
-                    $telegram->sendPhoto([
-                        'chat_id' => $chat_id,
-                        'photo' => fopen($picture->getRealPath(), 'r'),
-                        'caption' => 'Foydalanuvchi: ' . ($eventData->AccessControllerEvent->name ?? 'Noma\'lum') .
-                            "\nHolati: " . ($eventData->AccessControllerEvent->attendanceStatus ?? 'Noma\'lum') .
-                            "\nPath : $savedPath" .
-                            "\nPath : {$eventData->AccessControllerEvent->employeeNoString}",
-                    ]);
+                    $savedPath = $picture->storeAs("hikvision/$eventData->shortSerialNumber", $filename, 'public');
                 }
 
 
