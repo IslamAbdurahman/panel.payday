@@ -202,10 +202,10 @@ class TelegramService
             $text .= "Agar siz botni guruh yoki kanalga qo'shgan bo'lsangiz, quyidagi Chat ID ni nusxalab oling va tizimga kiriting:\n\n";
             $text .= "Chat ID: " . $chatId;
 
-//            $this->telegram->sendMessage([
-//                'chat_id' => $chatId,
-//                'text' => $text,
-//            ]);
+            $this->telegram->sendMessage([
+                'chat_id' => $chatId,
+                'text' => $text,
+            ]);
         }
         catch (\Exception $e) {
             Log::error('Telegram sendMessage error: ' . $e->getMessage());
@@ -228,7 +228,7 @@ class TelegramService
                 $params['reply_markup'] = $keyboard;
             }
 
-//            $this->telegram->sendMessage($params);
+            $this->telegram->sendMessage($params);
         }
         catch (\Exception $e) {
             Log::error('Telegram sendMessage error: ' . $e->getMessage());

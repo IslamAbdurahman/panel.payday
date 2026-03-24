@@ -125,11 +125,11 @@ Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
 
         foreach ($users as $user) {
             try {
-//                $telegram->sendMessage([
-//                    'chat_id'    => $user->telegram_id,
-//                    'text'       => $caption,
-//                    'parse_mode' => 'HTML',
-//                ]);
+                $telegram->sendMessage([
+                    'chat_id'    => $user->telegram_id,
+                    'text'       => $caption,
+                    'parse_mode' => 'HTML',
+                ]);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('sendMessage xatolik (user): ' . $e->getMessage());
             }
@@ -137,11 +137,11 @@ Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
 
         if ($worker->telegram_id) {
             try {
-//                $telegram->sendMessage([
-//                    'chat_id'    => $worker->telegram_id,
-//                    'text'       => $caption,
-//                    'parse_mode' => 'HTML',
-//                ]);
+                $telegram->sendMessage([
+                    'chat_id'    => $worker->telegram_id,
+                    'text'       => $caption,
+                    'parse_mode' => 'HTML',
+                ]);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('sendMessage xatolik (worker): ' . $e->getMessage());
             }
@@ -149,11 +149,11 @@ Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
 
         if ($worker->branch && $worker->branch->telegram_group_id) {
             try {
-//                $telegram->sendMessage([
-//                    'chat_id'    => $worker->branch->telegram_group_id,
-//                    'text'       => $caption,
-//                    'parse_mode' => 'HTML',
-//                ]);
+                $telegram->sendMessage([
+                    'chat_id'    => $worker->branch->telegram_group_id,
+                    'text'       => $caption,
+                    'parse_mode' => 'HTML',
+                ]);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('sendMessage xatolik (group): ' . $e->getMessage());
             }
