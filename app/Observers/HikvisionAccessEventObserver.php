@@ -7,6 +7,7 @@ use App\Models\User\User;
 use App\Models\Worker\Worker;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Telegram\Bot\FileUpload\InputFile;
 
 class HikvisionAccessEventObserver
 {
@@ -125,37 +126,40 @@ Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
 
         foreach ($users as $user) {
             try {
-                $telegram->sendMessage([
+                $telegram->sendPhoto([
                     'chat_id'    => $user->telegram_id,
-                    'text'       => $caption,
+                    'photo'      => InputFile::create($photoPath),
+                    'caption'    => $caption,
                     'parse_mode' => 'HTML',
                 ]);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('sendMessage xatolik (user): ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('sendPhoto xatolik (user): ' . $e->getMessage());
             }
         }
 
         if ($worker->telegram_id) {
             try {
-                $telegram->sendMessage([
+                $telegram->sendPhoto([
                     'chat_id'    => $worker->telegram_id,
-                    'text'       => $caption,
+                    'photo'      => InputFile::create($photoPath),
+                    'caption'    => $caption,
                     'parse_mode' => 'HTML',
                 ]);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('sendMessage xatolik (worker): ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('sendPhoto xatolik (worker): ' . $e->getMessage());
             }
         }
 
         if ($worker->branch && $worker->branch->telegram_group_id) {
             try {
-                $telegram->sendMessage([
+                $telegram->sendPhoto([
                     'chat_id'    => $worker->branch->telegram_group_id,
-                    'text'       => $caption,
+                    'photo'      => InputFile::create($photoPath),
+                    'caption'    => $caption,
                     'parse_mode' => 'HTML',
                 ]);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('sendMessage xatolik (group): ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('sendPhoto xatolik (group): ' . $e->getMessage());
             }
         }
     }
