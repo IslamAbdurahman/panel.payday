@@ -7,7 +7,6 @@ use App\Models\Worker\Worker;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Api;
 use Telegram\Bot\Keyboard\Keyboard;
-use Telegram\Bot\Objects\ReplyKeyboardRemove;
 
 class TelegramService
 {
