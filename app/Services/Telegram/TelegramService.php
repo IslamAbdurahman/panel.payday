@@ -7,6 +7,7 @@ use App\Models\Worker\Worker;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Api;
 use Telegram\Bot\Keyboard\Keyboard;
+use Telegram\Bot\Objects\ReplyKeyboardRemove;
 
 class TelegramService
 {
@@ -157,13 +158,16 @@ class TelegramService
                 ->where('phone', $phone)
                 ->first();
 
+            $removeKeyboard = Keyboard::remove(['selective' => false]);
+
             if ($user) {
                 $user->telegram_id = $chatId;
                 $user->save();
 
                 $this->sendSafeMessage(
                     $chatId,
-                    "👋 Admin Payday . Xush kelibsiz."
+                    "👋 Admin Payday . Xush kelibsiz.",
+                    $removeKeyboard
                 );
             }
             elseif ($worker) {
@@ -172,13 +176,15 @@ class TelegramService
 
                 $this->sendSafeMessage(
                     $chatId,
-                    "👋 Foydalanuvchi Payday . Xush kelibsiz."
+                    "👋 Foydalanuvchi Payday . Xush kelibsiz.",
+                    $removeKeyboard
                 );
             }
             else {
                 $this->sendSafeMessage(
                     $chatId,
-                    "❌ Sizning raqamingiz bazada topilmadi. Iltimos, admin bilan bog'laning."
+                    "❌ Sizning raqamingiz bazada topilmadi. Iltimos, admin bilan bog'laning.",
+                    $removeKeyboard
                 );
             }
         }
