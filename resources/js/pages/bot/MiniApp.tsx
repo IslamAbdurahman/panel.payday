@@ -204,6 +204,13 @@ export default function MiniApp() {
             }
         } else if (!modelsLoaded) {
             console.warn("Yuzni tanish modellari hali yuklanmagan...");
+            if (window.Telegram?.WebApp?.showAlert) {
+                window.Telegram.WebApp.showAlert("AI Yuzni tekshirish tizimi ishga tushmoqda, iltimos 2-3 soniya kutib, qayta urinib ko'ring.");
+            } else alert("Tizim ishga tushmoqda, biroz kuting.");
+            setActionLoading(false);
+            setPendingAction(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
         }
 
         try {
