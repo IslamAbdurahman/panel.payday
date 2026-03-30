@@ -11,3 +11,5 @@ Route::get('/user', function (Request $request) {
 Route::any('/hikvision-callback', [\App\Http\Controllers\Hikvision\HikvisionController::class, 'store']);
 
 Route::get('/worker/show_history/{worker}', [\App\Http\Controllers\Worker\WorkerController::class, 'show_history']);
+Route::post('/bot/auth', [\App\Http\Controllers\Api\TelegramBotController::class, 'authenticate']);
+Route::post('/bot/attendance', [\App\Http\Controllers\Api\TelegramBotController::class, 'recordAttendance']);

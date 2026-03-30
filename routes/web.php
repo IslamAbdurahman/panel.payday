@@ -9,14 +9,14 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::any('telegram/handle', [\App\Http\Controllers\TelegramController::class, 'handle']);
+Route::any('telegram/handle', [\App\Http\Controllers\TelegramController::class , 'handle']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
-//    Route::get('dashboard', function () {
+    //    Route::get('dashboard', function () {
 //        return Inertia::render('dashboard');
 //    })->name('dashboard');
 
-    Route::get('dashboard', [\App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
+    Route::get('dashboard', [\App\Http\Controllers\HomeController::class , 'index'])->name('dashboard');
 
     Route::resource('user', \App\Http\Controllers\User\UserController::class);
     Route::resource('user_firm', \App\Http\Controllers\User\UserFirmController::class);
@@ -35,13 +35,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('salary_payment', \App\Http\Controllers\Salary\SalaryPaymentController::class);
     Route::resource('hikvision_access_event', \App\Http\Controllers\Hikvision\HikvisionAccessEventController::class);
 
-    Route::get('/worker/show_history/{worker}', [\App\Http\Controllers\Worker\WorkerController::class, 'show_history']);
+    Route::get('/worker/show_history/{worker}', [\App\Http\Controllers\Worker\WorkerController::class , 'show_history']);
 
-    Route::get('/attendance', [\App\Http\Controllers\Hikvision\HikvisionController::class, 'attendance']);
-    Route::get('/daily_attendance/{branch}', [\App\Http\Controllers\Hikvision\HikvisionController::class, 'daily_attendance']);
+    Route::get('/attendance', [\App\Http\Controllers\Hikvision\HikvisionController::class , 'attendance']);
+    Route::get('/daily_attendance/{branch}', [\App\Http\Controllers\Hikvision\HikvisionController::class , 'daily_attendance']);
 
-    Route::get('/monthly_attendance', [\App\Http\Controllers\ReportController::class, 'monthly_attendance']);
-    Route::get('/salary_report', [\App\Http\Controllers\ReportController::class, 'salary_report']);
+    Route::get('/monthly_attendance', [\App\Http\Controllers\ReportController::class , 'monthly_attendance']);
+    Route::get('/salary_report', [\App\Http\Controllers\ReportController::class , 'salary_report']);
 
 });
 
@@ -49,8 +49,8 @@ require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
 
 
-Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+Route::get('/auth/google', [GoogleAuthController::class , 'redirect'])->name('google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class , 'callback'])->name('google.callback');
 Route::get('/lang/{locale}', function ($locale) {
     if (!in_array($locale, ['en', 'uz', 'ru'])) {
         abort(400);
@@ -74,4 +74,8 @@ Route::any('/pay/{paysys}/{key}/{amount}', function ($paysys, $key, $amount) {
     $pay_uz
         ->driver($paysys)
         ->redirect($model, $amount, 860, $url);
+});
+
+Route::get('/bot/mini-app', function () {
+    return inertia('bot/MiniApp');
 });
