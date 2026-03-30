@@ -15,12 +15,10 @@ declare global {
     }
 }
 
-type LivenessAction = 'chapga_qarang' | 'ongga_qarang';
-const LIVENESS_ACTIONS: LivenessAction[] = ['chapga_qarang', 'ongga_qarang'];
-
+type LivenessAction = 'togri_qarang' | 'yonroqqa_qarang';
 const ACTION_LABELS: Record<LivenessAction, string> = {
-    chapga_qarang: "Qulfni ochish uchun: Boshingizni CHAPGA buring ⬅️",
-    ongga_qarang: "Qulfni ochish uchun: Boshingizni O'NGGA buring ➡️"
+    togri_qarang: "Qulfni ochish uchun: Dastlab kameraga TO'G'RI qarang 📸",
+    yonroqqa_qarang: "Endi boshingizni salgina YONBOSHGA (o'ngga yoki chapga) buring ↔️"
 };
 
 export default function MiniApp() {
@@ -192,10 +190,10 @@ export default function MiniApp() {
         setLivenessPassed(false);
         setCameraFeedback("Kameraga qarab turing...");
         
-        // Require BOTH a Left turn and a Right turn (in random order)
-        // A single printed photo cannot do both
-        const shuffled = [...LIVENESS_ACTIONS].sort(() => 0.5 - Math.random());
-        setLivenessQueue([shuffled[0], shuffled[1]]);
+        // State Transition Liveness Protocol
+        // 1. Must see a straight frontal face (to prevent side-photo spoofing)
+        // 2. Must see a turned face (to prevent straight-photo spoofing)
+        setLivenessQueue(['togri_qarang', 'yonroqqa_qarang']);
         setCurrentActionIndex(0);
         
         setIsCameraActive(true);
@@ -243,11 +241,20 @@ export default function MiniApp() {
                 setCameraFeedback(ACTION_LABELS[currentAct]);
 
                 let actionPassed = false;
-                // Threshold 1.2 requires a deliberate but gentle turn.
-                // A static photo of a straight face will fail. 
-                // A photo of a turned face will pass one, but fail the opposite one.
-                if (currentAct === 'ongga_qarang' && rightSideDist > leftSideDist * 1.2) actionPassed = true;
-                if (currentAct === 'chapga_qarang' && leftSideDist > rightSideDist * 1.2) actionPassed = true;
+
+                if (currentAct === 'togri_qarang') {
+                    // Face must be straight (distances nearly equal)
+                    const maxDist = Math.max(leftSideDist, rightSideDist);
+                    const minDist = Math.min(leftSideDist, rightSideDist);
+                    if (maxDist < minDist * 1.15) {
+                        actionPassed = true;
+                    }
+                } else if (currentAct === 'yonroqqa_qarang') {
+                    // Face must be turned slightly left or right (diff > 1.2)
+                    if (leftSideDist > rightSideDist * 1.2 || rightSideDist > leftSideDist * 1.2) {
+                        actionPassed = true;
+                    }
+                }
 
                 if (actionPassed) {
                     if (currentActionIndex + 1 < livenessQueue.length) {
