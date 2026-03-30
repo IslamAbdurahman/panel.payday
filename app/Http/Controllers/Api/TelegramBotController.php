@@ -16,43 +16,49 @@ class TelegramBotController extends Controller
      */
     public function authenticate(Request $request)
     {
-        $request->validate([
-            'telegram_id' => 'required|numeric' // Note: For production, validate hash using bot token
-        ]);
+        try {
+            $telegram_id = $request->input('telegram_id');
+            $worker = Worker::query()->where('telegram_id', $telegram_id)->first();
 
-        $telegram_id = $request->input('telegram_id');
-        $worker = Worker::query()->where('telegram_id', $telegram_id)->first();
+            if (!$worker) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sizning Telegram profilingiz xodimlar ro\'yxatidan topilmadi. Iltimos, adminstratorga murojaat qiling.'
+                ], 404);
+            }
 
-        if (!$worker) {
+            // Return worker details and their current status for today
+            $todayStr = Carbon::now()->toDateString();
+            
+            $todayCheckIn = HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
+                ->whereDate('created_at', $todayStr)
+                ->where('attendanceStatus', 'checkIn')
+                ->first();
+                
+            $todayCheckOut = HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
+                ->whereDate('created_at', $todayStr)
+                ->where('attendanceStatus', 'checkOut')
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'worker' => $worker,
+                'status' => [
+                    'has_checked_in' => !!$todayCheckIn,
+                    'has_checked_out' => !!$todayCheckOut,
+                    'check_in_time' => $todayCheckIn ? $todayCheckIn->created_at->format('H:i') : null,
+                    'check_out_time' => $todayCheckOut ? $todayCheckOut->created_at->format('H:i') : null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            if (function_exists('telegramlog')) {
+                telegramlog("Auth xatosi: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
+            }
             return response()->json([
                 'success' => false,
-                'message' => 'Sizning Telegram profilingiz xodimlar ro\'yxatidan topilmadi. Iltimos, adminstratorga murojaat qiling.'
-            ], 404);
+                'message' => 'Xatolik: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Return worker details and their current status for today
-        $todayStr = Carbon::now()->toDateString();
-        
-        $todayCheckIn = HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
-            ->whereDate('created_at', $todayStr)
-            ->where('attendanceStatus', 'checkIn')
-            ->first();
-            
-        $todayCheckOut = HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
-            ->whereDate('created_at', $todayStr)
-            ->where('attendanceStatus', 'checkOut')
-            ->first();
-
-        return response()->json([
-            'success' => true,
-            'worker' => $worker,
-            'status' => [
-                'has_checked_in' => !!$todayCheckIn,
-                'has_checked_out' => !!$todayCheckOut,
-                'check_in_time' => $todayCheckIn ? $todayCheckIn->created_at->format('H:i') : null,
-                'check_out_time' => $todayCheckOut ? $todayCheckOut->created_at->format('H:i') : null,
-            ]
-        ]);
     }
 
     /**
@@ -123,11 +129,16 @@ class TelegramBotController extends Controller
                 'time' => $event->created_at->format('H:i')
             ]);
         } catch (\Exception $e) {
-            Log::error("Davomat olishda xatolik: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            $errorMsg = "Davomat olishda xatolik: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine();
+            Log::error($errorMsg);
+            
+            if (function_exists('telegramlog')) {
+                telegramlog($errorMsg);
+            }
+            
             return response()->json([
                 'success' => false,
-                // 'message' => 'Noma\'lum xatolik yuz berdi. Qaytadan urinib ko\'ring.'
-                'message' => 'Xatolik: ' . $e->getMessage() . ' | Qator: ' . $e->getLine()
+                'message' => 'Noma\'lum xatolik yuz berdi. Xabar adminlarga jo\'natildi. Error: ' . $e->getMessage()
             ], 500);
         }
     }
