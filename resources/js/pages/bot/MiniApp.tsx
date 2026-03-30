@@ -17,9 +17,9 @@ declare global {
 
 type LivenessAction = 'togri_qarang' | 'chapga_qarang' | 'ongga_qarang';
 const ACTION_LABELS: Record<LivenessAction, string> = {
-    chapga_qarang: "Endi boshingizni CHAPGA buring ⬅️",
-    ongga_qarang: "Endi boshingizni O'NGGA buring ➡️",
     togri_qarang: "Dastlab kameraga TO'G'RI qarang 📸",
+    chapga_qarang: "Endi boshingizni CHAPGA buring ⬅️",
+    ongga_qarang: "Endi boshingizni O'NGGA buring ➡️"
 };
 
 export default function MiniApp() {
@@ -43,6 +43,7 @@ export default function MiniApp() {
     const livenessQueueRef = useRef<LivenessAction[]>([]);
     const actionIndexRef = useRef<number>(0);
     const livenessPassedRef = useRef<boolean>(false);
+    const straightFaceFileRef = useRef<File | null>(null);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -194,6 +195,7 @@ export default function MiniApp() {
         setPendingAction(type);
         setLivenessPassed(false);
         livenessPassedRef.current = false;
+        straightFaceFileRef.current = null;
         setCameraFeedback("Kameraga qarab turing...");
 
         // State Transition Liveness Protocol: 3 Steps
@@ -259,10 +261,13 @@ export default function MiniApp() {
 
                 if (currentAct === 'togri_qarang') {
                     // Face must be straight (distances nearly equal). 
-                    // Set to 1.3 to easily pass even with mild asymmetry.
                     const maxDist = Math.max(leftSideDist, rightSideDist);
                     const minDist = Math.min(leftSideDist, rightSideDist);
                     if (maxDist < minDist * 1.3) {
+                        // CAPTURE THE STRAIGHT FACE NOW for later upload if not already captured
+                        if (!straightFaceFileRef.current) {
+                            await captureStraightFace();
+                        }
                         actionPassed = true;
                     }
                 } else if (currentAct === 'chapga_qarang') {
@@ -306,44 +311,36 @@ export default function MiniApp() {
     };
 
     // Trigger processLiveness when video actually starts playing
+    const captureStraightFace = async () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const videoEl = videoRef.current;
+        const canvasEl = canvasRef.current;
+        const MAX_WIDTH = 480;
+        let cWidth = videoEl.videoWidth;
+        let cHeight = videoEl.videoHeight;
+        if (cWidth > MAX_WIDTH) {
+            cHeight = Math.floor(cHeight * (MAX_WIDTH / cWidth));
+            cWidth = MAX_WIDTH;
+        }
+        canvasEl.width = cWidth;
+        canvasEl.height = cHeight;
+        const ctx = canvasEl.getContext('2d');
+        if (ctx) ctx.drawImage(videoEl, 0, 0, cWidth, cHeight);
+        const blob = await new Promise<Blob | null>(resolve => canvasEl.toBlob(resolve, 'image/jpeg', 0.6));
+        if (blob) {
+            straightFaceFileRef.current = new File([blob], "frontal.jpg", { type: "image/jpeg" });
+        }
+    };
+
     const handleVideoPlay = () => {
         loopRef.current = requestAnimationFrame(processLiveness);
     };
 
     const captureAndVerify = async () => {
-        if (!videoRef.current || !canvasRef.current) return;
+        if (!videoRef.current || !straightFaceFileRef.current) return;
         
         const videoEl = videoRef.current;
-        const canvasEl = canvasRef.current;
-        
-        // Massive Size Reduction (10x smaller)
-        const MAX_WIDTH = 480;
-        let cWidth = videoEl.videoWidth;
-        let cHeight = videoEl.videoHeight;
-        
-        if (cWidth > MAX_WIDTH) {
-            cHeight = Math.floor(cHeight * (MAX_WIDTH / cWidth));
-            cWidth = MAX_WIDTH;
-        }
-
-        canvasEl.width = cWidth;
-        canvasEl.height = cHeight;
-        
-        const ctx = canvasEl.getContext('2d');
-        if (ctx) {
-            // We DONT explicitly flip the canvas, we just draw the raw frame.
-            ctx.drawImage(videoEl, 0, 0, cWidth, cHeight);
-        }
-        
-        // Convert to blob (Use 0.6 quality for massive size savings)
-        const blob = await new Promise<Blob | null>(resolve => canvasEl.toBlob(resolve, 'image/jpeg', 0.6));
-        if (!blob) {
-            alert("Rasm olishda xatolik yuz berdi.");
-            stopCamera();
-            setPendingAction(null);
-            return;
-        }
-        const file = new File([blob], "snapshot.jpg", { type: "image/jpeg" });
+        const file = straightFaceFileRef.current;
 
         // Optionally Stop video visually early to show it's "frozen"
         videoEl.pause();
