@@ -32,7 +32,9 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
 
     // Suppose you have an array like:
     const images = hikvision_access_events.data.map(item => ({
-        src: `/storage/hikvision/${item.hikvision_access?.shortSerialNumber}/${item.picture}`
+        src: item.picture && item.picture.includes('/') 
+             ? `/storage/${item.picture}` 
+             : `/storage/hikvision/${item.hikvision_access?.shortSerialNumber}/${item.picture}`
     }));
 
     const handleDelete = (id: number) => {
@@ -123,9 +125,9 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
                                                 setCurrentIndex(index); // pass index in .map loop
                                                 setShowModal(true);
                                             }}
-                                            className="transition-transform duration-300 ease-in-out transform hover:scale-125 cursor-pointer"
-                                            src={`/storage/hikvision/${item.hikvision_access?.shortSerialNumber}/${item.picture}`}
-                                            alt="App Logo"
+                                            className="transition-transform duration-300 ease-in-out transform hover:scale-125 cursor-pointer max-h-12 rounded object-cover"
+                                            src={item.picture && item.picture.includes('/') ? `/storage/${item.picture}` : `/storage/hikvision/${item.hikvision_access?.shortSerialNumber}/${item.picture}`}
+                                            alt="Olingan Rasm"
                                         />
                                     </div>
                                 </td>
