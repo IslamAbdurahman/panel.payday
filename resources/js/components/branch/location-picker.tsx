@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useState, useEffect, useRef } from 'react';
@@ -167,7 +167,7 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="absolute top-2 right-2 z-[1000] bg-white/90 shadow-lg hover:bg-white dark:bg-gray-800/90"
+                className="absolute top-2 right-12 z-[1000] bg-white/90 shadow-lg hover:bg-white dark:bg-gray-800/90"
                 onClick={handleLocateMe}
                 disabled={isLocating}
             >
@@ -184,11 +184,13 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
                 zoom={15}
                 scrollWheelZoom={true}
                 className="h-full w-full"
+                zoomControl={false}
             >
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+                <ZoomControl position="bottomright" />
                 <LocationMarker 
                     lat={parseFloat(latitude) || defaultLat} 
                     lng={parseFloat(longitude) || defaultLng} 
