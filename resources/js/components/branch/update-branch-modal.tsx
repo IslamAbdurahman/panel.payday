@@ -82,7 +82,7 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="!max-w-[60%] !w-[60vw] dark:border-gray-400">
+            <DialogContent className="!max-w-[95%] !w-[95vw] lg:!max-w-[85vw] lg:!w-[85vw] xl:!max-w-[75vw] xl:!w-[75vw] dark:border-gray-400">
                 <DialogDescription>
                     <DialogTitle>{t('modal.update_title')}</DialogTitle>
                     <DialogDescription>{t('modal.update_description')}</DialogDescription>

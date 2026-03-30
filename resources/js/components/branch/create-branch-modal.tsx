@@ -75,7 +75,7 @@ export default function CreateBranchModal({ firm }: createBranch) {
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="!max-w-[60%] !w-[60vw] dark:border-gray-400">
+            <DialogContent className="!max-w-[95%] !w-[95vw] lg:!max-w-[85vw] lg:!w-[85vw] xl:!max-w-[75vw] xl:!w-[75vw] dark:border-gray-400">
                 <DialogDescription>
                     <DialogTitle>{t('modal.create_title')}</DialogTitle>
                     <DialogDescription>{t('modal.create_description')}</DialogDescription>
