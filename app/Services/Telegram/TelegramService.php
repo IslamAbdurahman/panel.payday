@@ -173,7 +173,8 @@ class TelegramService
                     $removeKeyboard
                 );
             }
-            elseif ($worker) {
+            
+            if ($worker) {
                 $worker->telegram_id = $chatId;
                 $worker->save();
 
