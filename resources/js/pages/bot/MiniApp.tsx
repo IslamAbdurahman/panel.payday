@@ -272,12 +272,13 @@ export default function MiniApp() {
                     }
                 } else if (currentAct === 'chapga_qarang') {
                     // Face turned left (nose moves toward right of image)
-                    if (leftSideDist > rightSideDist * 1.35) {
+                    // Increased to 1.6 for stricter verification (requires more turn)
+                    if (leftSideDist > rightSideDist * 1.6) {
                         actionPassed = true;
                     }
                 } else if (currentAct === 'ongga_qarang') {
                     // Face turned right
-                    if (rightSideDist > leftSideDist * 1.35) {
+                    if (rightSideDist > leftSideDist * 1.6) {
                         actionPassed = true;
                     }
                 }
