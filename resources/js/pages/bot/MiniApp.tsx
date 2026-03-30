@@ -15,11 +15,12 @@ declare global {
     }
 }
 
-type LivenessAction = 'bosh_burish';
-const LIVENESS_ACTIONS: LivenessAction[] = ['bosh_burish'];
+type LivenessAction = 'chapga_qarang' | 'ongga_qarang';
+const LIVENESS_ACTIONS: LivenessAction[] = ['chapga_qarang', 'ongga_qarang'];
 
 const ACTION_LABELS: Record<LivenessAction, string> = {
-    bosh_burish: "Boshingizni O'NGGA ➡️ yoki CHAPGA ⬅️ buring"
+    chapga_qarang: "Qulfni ochish uchun: Boshingizni CHAPGA buring ⬅️",
+    ongga_qarang: "Qulfni ochish uchun: Boshingizni O'NGGA buring ➡️"
 };
 
 export default function MiniApp() {
@@ -191,8 +192,10 @@ export default function MiniApp() {
         setLivenessPassed(false);
         setCameraFeedback("Kameraga qarab turing...");
         
-        // We only require 1 successful turn for Liveness!
-        setLivenessQueue(['bosh_burish']);
+        // Require BOTH a Left turn and a Right turn (in random order)
+        // A single printed photo cannot do both
+        const shuffled = [...LIVENESS_ACTIONS].sort(() => 0.5 - Math.random());
+        setLivenessQueue([shuffled[0], shuffled[1]]);
         setCurrentActionIndex(0);
         
         setIsCameraActive(true);
@@ -240,12 +243,11 @@ export default function MiniApp() {
                 setCameraFeedback(ACTION_LABELS[currentAct]);
 
                 let actionPassed = false;
-                // Accept ANY lateral head turn! If face is turned left or right beyond a 1.25 ratio:
-                if (currentAct === 'bosh_burish') {
-                    if (leftSideDist > rightSideDist * 1.25 || rightSideDist > leftSideDist * 1.25) {
-                        actionPassed = true;
-                    }
-                }
+                // Threshold 1.2 requires a deliberate but gentle turn.
+                // A static photo of a straight face will fail. 
+                // A photo of a turned face will pass one, but fail the opposite one.
+                if (currentAct === 'ongga_qarang' && rightSideDist > leftSideDist * 1.2) actionPassed = true;
+                if (currentAct === 'chapga_qarang' && leftSideDist > rightSideDist * 1.2) actionPassed = true;
 
                 if (actionPassed) {
                     if (currentActionIndex + 1 < livenessQueue.length) {
