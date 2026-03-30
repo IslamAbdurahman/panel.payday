@@ -245,11 +245,12 @@ export default function MiniApp() {
                 setCameraFeedback(ACTION_LABELS[currentAct]);
 
                 let actionPassed = false;
-                // Since WebRTC frames are unmirrored, when User turns THEIR Right, nose goes toward Left side (0). Thus rightSideDist > leftSideDist.
-                if (currentAct === 'onga_qarang' && rightSideDist > leftSideDist * 1.5) actionPassed = true;
-                if (currentAct === 'chapga_qarang' && leftSideDist > rightSideDist * 1.5) actionPassed = true;
-                if (currentAct === 'tepaga_qarang' && bottomNoseDist > topNoseDist * 1.4) actionPassed = true;
-                if (currentAct === 'pastga_qarang' && topNoseDist > bottomNoseDist * 1.4) actionPassed = true;
+                // Sensitivities lowered to 1.15 and 1.1 to register subtle turns
+                // because TinyFaceDetector loses face tracking if turned too much
+                if (currentAct === 'onga_qarang' && rightSideDist > leftSideDist * 1.15) actionPassed = true;
+                if (currentAct === 'chapga_qarang' && leftSideDist > rightSideDist * 1.15) actionPassed = true;
+                if (currentAct === 'tepaga_qarang' && bottomNoseDist > topNoseDist * 1.15) actionPassed = true;
+                if (currentAct === 'pastga_qarang' && topNoseDist > bottomNoseDist * 1.05) actionPassed = true;
 
                 if (actionPassed) {
                     if (currentActionIndex + 1 < livenessQueue.length) {
