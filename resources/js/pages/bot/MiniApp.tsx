@@ -15,14 +15,11 @@ declare global {
     }
 }
 
-type LivenessAction = 'chapga_qarang' | 'onga_qarang' | 'tepaga_qarang' | 'pastga_qarang';
-const LIVENESS_ACTIONS: LivenessAction[] = ['chapga_qarang', 'onga_qarang', 'tepaga_qarang', 'pastga_qarang'];
+type LivenessAction = 'bosh_burish';
+const LIVENESS_ACTIONS: LivenessAction[] = ['bosh_burish'];
 
 const ACTION_LABELS: Record<LivenessAction, string> = {
-    chapga_qarang: "Boshingizni CHAPGA buring ⬅️",
-    onga_qarang: "Boshingizni O'NGGA buring ➡️",
-    tepaga_qarang: "Boshingizni TEPAGA ko'taring ⬆️",
-    pastga_qarang: "Boshingizni PASTGA tushiring ⬇️"
+    bosh_burish: "Boshingizni O'NGGA ➡️ yoki CHAPGA ⬅️ buring"
 };
 
 export default function MiniApp() {
@@ -194,10 +191,8 @@ export default function MiniApp() {
         setLivenessPassed(false);
         setCameraFeedback("Kameraga qarab turing...");
         
-        // Randomly pick 2 liveness actions
-        const shuffled = [...LIVENESS_ACTIONS].sort(() => 0.5 - Math.random());
-        const queue = [shuffled[0], shuffled[1]];
-        setLivenessQueue(queue);
+        // We only require 1 successful turn for Liveness!
+        setLivenessQueue(['bosh_burish']);
         setCurrentActionIndex(0);
         
         setIsCameraActive(true);
@@ -245,12 +240,12 @@ export default function MiniApp() {
                 setCameraFeedback(ACTION_LABELS[currentAct]);
 
                 let actionPassed = false;
-                // Sensitivities lowered to 1.15 and 1.1 to register subtle turns
-                // because TinyFaceDetector loses face tracking if turned too much
-                if (currentAct === 'onga_qarang' && rightSideDist > leftSideDist * 1.15) actionPassed = true;
-                if (currentAct === 'chapga_qarang' && leftSideDist > rightSideDist * 1.15) actionPassed = true;
-                if (currentAct === 'tepaga_qarang' && bottomNoseDist > topNoseDist * 1.15) actionPassed = true;
-                if (currentAct === 'pastga_qarang' && topNoseDist > bottomNoseDist * 1.05) actionPassed = true;
+                // Accept ANY lateral head turn! If face is turned left or right beyond a 1.25 ratio:
+                if (currentAct === 'bosh_burish') {
+                    if (leftSideDist > rightSideDist * 1.25 || rightSideDist > leftSideDist * 1.25) {
+                        actionPassed = true;
+                    }
+                }
 
                 if (actionPassed) {
                     if (currentActionIndex + 1 < livenessQueue.length) {
