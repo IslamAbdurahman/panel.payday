@@ -15,10 +15,11 @@ declare global {
     }
 }
 
-type LivenessAction = 'togri_qarang' | 'yonroqqa_qarang';
+type LivenessAction = 'togri_qarang' | 'chapga_qarang' | 'ongga_qarang';
 const ACTION_LABELS: Record<LivenessAction, string> = {
-    togri_qarang: "Qulfni ochish uchun: Dastlab kameraga TO'G'RI qarang 📸",
-    yonroqqa_qarang: "Endi boshingizni salgina YONBOSHGA (o'ngga yoki chapga) buring ↔️"
+    togri_qarang: "Dastlab kameraga TO'G'RI qarang 📸",
+    chapga_qarang: "Endi boshingizni CHAPGA buring ⬅️",
+    ongga_qarang: "Endi boshingizni O'NGGA buring ➡️"
 };
 
 export default function MiniApp() {
@@ -38,11 +39,11 @@ export default function MiniApp() {
     const [currentActionIndex, setCurrentActionIndex] = useState(0);
     const [cameraFeedback, setCameraFeedback] = useState<string>("Kamera ishga tushmoqda...");
     const [livenessPassed, setLivenessPassed] = useState(false);
-    
+
     const livenessQueueRef = useRef<LivenessAction[]>([]);
     const actionIndexRef = useRef<number>(0);
     const livenessPassedRef = useRef<boolean>(false);
-    
+
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const loopRef = useRef<number | null>(null);
@@ -55,7 +56,7 @@ export default function MiniApp() {
                 const WebApp = window.Telegram.WebApp;
                 WebApp.ready();
                 WebApp.expand();
-                
+
                 if (WebApp.platform === "web" || WebApp.platform === "tdesktop") {
                     WebApp.requestFullscreen();
                 }
@@ -117,7 +118,7 @@ export default function MiniApp() {
         };
 
         loadModels();
-        
+
         return () => {
             isMounted = false;
             if (loopRef.current) cancelAnimationFrame(loopRef.current);
@@ -164,7 +165,7 @@ export default function MiniApp() {
             if (window.Telegram?.WebApp?.showAlert) {
                 window.Telegram.WebApp.showAlert("Iltimos, avvalo qurilmangizdan joylashuv (GPS) aniqlanishiga ruxsat bering! Busiz davomat olinmaydi.");
             } else alert("Joylashuv (GPS) aniqlanmadi.");
-            
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -194,20 +195,22 @@ export default function MiniApp() {
         setLivenessPassed(false);
         livenessPassedRef.current = false;
         setCameraFeedback("Kameraga qarab turing...");
-        
-        // State Transition Liveness Protocol
-        // 1. Must see a straight frontal face (to prevent side-photo spoofing)
-        // 2. Must see a turned face (to prevent straight-photo spoofing)
-        const queue: LivenessAction[] = ['togri_qarang', 'yonroqqa_qarang'];
+
+        // State Transition Liveness Protocol: 3 Steps
+        // 1. Straight Frontal Face
+        // 2. Turn Left
+        // 3. Turn Right (or vice versa)
+        const sideActions = ['chapga_qarang', 'ongga_qarang'].sort(() => 0.5 - Math.random()) as LivenessAction[];
+        const queue: LivenessAction[] = ['togri_qarang', ...sideActions];
         setLivenessQueue(queue);
         livenessQueueRef.current = queue;
-        
+
         setCurrentActionIndex(0);
         actionIndexRef.current = 0;
-        
+
         setIsCameraActive(true);
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
+            const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
             });
             if (videoRef.current) {
@@ -228,7 +231,7 @@ export default function MiniApp() {
 
         try {
             const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
-            
+
             if (detection) {
                 const landmarks = detection.landmarks.positions;
                 const nose = landmarks[30];
@@ -262,9 +265,14 @@ export default function MiniApp() {
                     if (maxDist < minDist * 1.3) {
                         actionPassed = true;
                     }
-                } else if (currentAct === 'yonroqqa_qarang') {
-                    // Face must be turned slightly left or right (diff > 1.45).
-                    if (leftSideDist > rightSideDist * 1.45 || rightSideDist > leftSideDist * 1.45) {
+                } else if (currentAct === 'chapga_qarang') {
+                    // Face turned left (nose moves toward right of image)
+                    if (leftSideDist > rightSideDist * 1.35) {
+                        actionPassed = true;
+                    }
+                } else if (currentAct === 'ongga_qarang') {
+                    // Face turned right
+                    if (rightSideDist > leftSideDist * 1.35) {
                         actionPassed = true;
                     }
                 }
@@ -304,7 +312,7 @@ export default function MiniApp() {
 
     const captureAndVerify = async () => {
         if (!videoRef.current || !canvasRef.current) return;
-        
+
         // Draw to canvas
         const videoEl = videoRef.current;
         const canvasEl = canvasRef.current;
@@ -315,7 +323,7 @@ export default function MiniApp() {
             // We DONT explicitly flip the canvas, we just draw the raw frame.
             ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
         }
-        
+
         // Convert to blob
         const blob = await new Promise<Blob | null>(resolve => canvasEl.toBlob(resolve, 'image/jpeg', 0.9));
         if (!blob) {
@@ -338,7 +346,7 @@ export default function MiniApp() {
                 return;
             }
         }
-        
+
         // Force unmount camera and Upload
         stopCamera();
         await submitAttendance(file);
@@ -348,7 +356,7 @@ export default function MiniApp() {
         try {
             const snapshotImg = await faceapi.bufferToImage(file);
             const snapshotDetection = await faceapi.detectSingleFace(snapshotImg, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-            
+
             if (!snapshotDetection) {
                 if (window.Telegram?.WebApp?.showAlert) {
                     window.Telegram.WebApp.showAlert("Olingan kadrda yuzingizni aniqlab bo'lmadi! Iltimos qayta urinib ko'ring.");
@@ -368,7 +376,7 @@ export default function MiniApp() {
 
             const distance = faceapi.euclideanDistance(snapshotDetection.descriptor, avatarDetection.descriptor);
             console.log("Face distance", distance);
-            
+
             if (distance < 0.6) {
                 return true;
             } else {
@@ -393,7 +401,7 @@ export default function MiniApp() {
             formData.append('telegram_id', worker.telegram_id.toString());
             if (pendingAction) formData.append('type', pendingAction);
             formData.append('picture', file);
-            
+
             if (location) {
                 formData.append('latitude', location.lat.toString());
                 formData.append('longitude', location.lng.toString());
@@ -402,14 +410,14 @@ export default function MiniApp() {
             const res = await axios.post('/api/bot/attendance', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            
+
             if (res.data.success) {
                 setStatus((prev: any) => ({
                     ...prev,
                     [pendingAction === 'checkIn' ? 'has_checked_in' : 'has_checked_out']: true,
                     [pendingAction === 'checkIn' ? 'check_in_time' : 'check_out_time']: res.data.time
                 }));
-                
+
                 if (window.Telegram?.WebApp?.showAlert) {
                     window.Telegram.WebApp.showAlert(res.data.message);
                 } else {
@@ -472,27 +480,27 @@ export default function MiniApp() {
             {isCameraActive && (
                 <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/90 backdrop-blur-sm p-4">
                     <div className="relative w-full max-w-md bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-zinc-800">
-                        
+
                         <div className="py-3 bg-zinc-900 border-b border-zinc-800 px-4 flex justify-between items-center text-white">
                             <span className="font-semibold text-sm flex items-center gap-2">
-                                <Camera className="w-4 h-4 text-blue-400" /> 
+                                <Camera className="w-4 h-4 text-blue-400" />
                                 Tiriklikni Tekshirish
                             </span>
                             <button onClick={stopCamera} className="text-zinc-400 p-1 bg-zinc-800 rounded-full hover:bg-zinc-700 hover:text-white transition-colors">
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
-                        
+
                         <div className="relative w-full bg-black flex items-center justify-center object-cover overflow-hidden" style={{ aspectRatio: '3/4' }}>
-                            <video 
+                            <video
                                 ref={videoRef}
                                 onPlay={handleVideoPlay}
-                                autoPlay 
-                                playsInline 
-                                muted 
-                                className="w-full h-full object-cover transform -scale-x-100" 
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full h-full object-cover transform -scale-x-100"
                             />
-                            
+
                             {/* Overlay UI */}
                             <div className="absolute top-4 left-0 right-0 px-4 flex justify-center">
                                 <div className="bg-black/70 rounded-full py-2 px-6 backdrop-blur-md border border-white/10 text-center flex flex-col items-center shadow-lg">
@@ -506,10 +514,10 @@ export default function MiniApp() {
                                     )}
                                 </div>
                             </div>
-                            
+
                             <canvas ref={canvasRef} className="hidden" />
                         </div>
-                        
+
                     </div>
                 </div>
             )}
@@ -525,7 +533,7 @@ export default function MiniApp() {
                             <div className="flex-1">
                                 <CardTitle className="text-xl">{worker?.name}</CardTitle>
                                 <CardDescription className="flex items-center mt-1">
-                                    <MapPin className="mr-1 h-3 w-3" /> 
+                                    <MapPin className="mr-1 h-3 w-3" />
                                     {worker?.branch?.name || 'Bosh ofis'}
                                 </CardDescription>
                             </div>
@@ -547,8 +555,8 @@ export default function MiniApp() {
                                     <div className="text-sm text-zinc-500">Vaqt: {status.check_in_time}</div>
                                 </div>
                             ) : (
-                                <Button 
-                                    size="lg" 
+                                <Button
+                                    size="lg"
                                     className="w-full h-16 text-lg rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white transition-all transform active:scale-95"
                                     disabled={actionLoading}
                                     onClick={() => triggerAction('checkIn')}
@@ -568,8 +576,8 @@ export default function MiniApp() {
                                     <div className="text-sm text-zinc-500">Vaqt: {status.check_out_time}</div>
                                 </div>
                             ) : (
-                                <Button 
-                                    size="lg" 
+                                <Button
+                                    size="lg"
                                     variant="outline"
                                     className="w-full h-16 text-lg rounded-xl shadow-sm border-zinc-200 transition-all transform active:scale-95"
                                     disabled={actionLoading || !status?.has_checked_in}
@@ -578,7 +586,7 @@ export default function MiniApp() {
                                     {actionLoading && pendingAction === 'checkOut' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Ishdan Ketdim"}
                                 </Button>
                             )}
-                            
+
                             {(!status?.has_checked_in && !status?.has_checked_out) && (
                                 <p className="mt-4 text-xs text-center text-zinc-400">
                                     Siz hali ishga kelganingizni belgilamadingiz. Ruxsat yo'q.
