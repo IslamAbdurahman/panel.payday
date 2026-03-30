@@ -24,6 +24,7 @@ export default function MiniApp() {
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [pendingAction, setPendingAction] = useState<'checkIn' | 'checkOut' | null>(null);
     const [modelsLoaded, setModelsLoaded] = useState(false);
+    const [aiStatusMessage, setAiStatusMessage] = useState<string>("Yuklanmoqda...");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Initialize Telegram WebApp and Auth
@@ -73,19 +74,22 @@ export default function MiniApp() {
 
         const loadModels = async () => {
             try {
+                setAiStatusMessage("Modellar qidirilmoqda...");
                 const MODEL_URL = window.location.origin + '/models';
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]);
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+                setAiStatusMessage("Detector yuklandi...");
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                setAiStatusMessage("Landmark yuklandi...");
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                setAiStatusMessage("Tayyor!");
                 setModelsLoaded(true);
             } catch (err: any) {
+                setAiStatusMessage("Xatolik: " + err.message);
                 console.error("Modellarni yuklashda xatolik:", err);
                 if (window.Telegram?.WebApp?.showAlert) {
-                    window.Telegram.WebApp.showAlert("AI Modellarini yuklashda xatolik: " + (err.message || "404 Not Found"));
+                    window.Telegram.WebApp.showAlert("AI Modellarini yuklashda xatolik: " + (err.message || String(err)));
                 } else alert("AI modellarni yuklashda xatolik yuz berdi");
-                setError("AI Modellarni yuklashda xato: " + (err.message || ""));
+                setError("AI Modellarni yuklashda xato: " + (err.message || String(err)));
                 setLoading(false);
             }
         };
@@ -307,13 +311,16 @@ export default function MiniApp() {
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg">
                                 {worker?.name?.charAt(0) || 'X'}
                             </div>
-                            <div>
+                            <div className="flex-1">
                                 <CardTitle className="text-xl">{worker?.name}</CardTitle>
                                 <CardDescription className="flex items-center mt-1">
                                     <MapPin className="mr-1 h-3 w-3" /> 
                                     {worker?.branch?.name || 'Bosh ofis'}
                                 </CardDescription>
                             </div>
+                        </div>
+                        <div className="mt-3 text-xs bg-zinc-100 dark:bg-zinc-800 rounded-md p-2 text-center text-zinc-600 dark:text-zinc-300">
+                            🤖 AI Yuz Tekshiruvi: <span className={`font-semibold ${modelsLoaded ? 'text-green-600' : 'text-orange-500'}`}>{aiStatusMessage}</span>
                         </div>
                     </CardHeader>
                 </Card>

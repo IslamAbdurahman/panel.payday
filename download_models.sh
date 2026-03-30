@@ -12,6 +12,7 @@ wget -nc $BASE_URL/face_landmark_68_model-shard1
 
 wget -nc $BASE_URL/face_recognition_model-weights_manifest.json
 wget -nc $BASE_URL/face_recognition_model-shard1
+wget -nc $BASE_URL/face_recognition_model-shard2
 
 wget -nc $BASE_URL/ssd_mobilenetv1_model-weights_manifest.json
 wget -nc $BASE_URL/ssd_mobilenetv1_model-shard1
