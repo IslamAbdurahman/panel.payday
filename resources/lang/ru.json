@@ -98,6 +98,7 @@
     "create": "Создать",
     "delete": "Удалить",
     "save": "Сохранить",
+    "select_on_map": "Выбрать на карте",
     "cancel": "Отмена",
     "modal": {
         "create_title": "Создание",

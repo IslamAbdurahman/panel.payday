@@ -17,6 +17,7 @@ import {
     DialogTitle
 } from '@/components/ui/dialog';
 import { Branch } from '@/types';
+import LocationPicker from '@/components/branch/location-picker';
 
 interface UpdateBranchModalProps {
     branch: Branch;
@@ -181,6 +182,17 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
                             <Input id="longitude" value={data.longitude} onChange={(e) => setData('longitude', e.target.value)} placeholder="69.2401" />
                             <InputError message={errors.longitude as string} />
                         </div>
+                    </div>
+
+                    <div className="mt-2">
+                        <Label className="mb-2 block">{t('select_on_map')}</Label>
+                        <LocationPicker 
+                            latitude={data.latitude} 
+                            longitude={data.longitude} 
+                            onChange={(lat, lng) => {
+                                setData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+                            }} 
+                        />
                     </div>
 
                     <div>

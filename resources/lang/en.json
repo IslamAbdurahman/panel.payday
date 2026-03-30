@@ -98,6 +98,7 @@
     "create": "Create",
     "delete": "Delete",
     "save": "Save",
+    "select_on_map": "Select on map",
     "cancel": "Cancel",
     "modal": {
         "create_title": "Creating",

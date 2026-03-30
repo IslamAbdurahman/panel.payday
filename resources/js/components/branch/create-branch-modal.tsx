@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { IoCreate } from 'react-icons/io5';
 import { Firm } from '@/types';
+import LocationPicker from '@/components/branch/location-picker';
 
 interface createBranch {
     firm: Firm;
@@ -164,6 +165,17 @@ export default function CreateBranchModal({ firm }: createBranch) {
                             <Input id="longitude" value={data.longitude} onChange={(e) => setData('longitude', e.target.value)} placeholder="69.2401" />
                             <InputError message={errors.longitude as string} />
                         </div>
+                    </div>
+
+                    <div className="mt-2">
+                        <Label className="mb-2 block">{t('select_on_map')}</Label>
+                        <LocationPicker 
+                            latitude={data.latitude} 
+                            longitude={data.longitude} 
+                            onChange={(lat, lng) => {
+                                setData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+                            }} 
+                        />
                     </div>
 
                     <DialogFooter className="gap-2">

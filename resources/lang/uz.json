@@ -98,6 +98,7 @@
     "create": "Yaratish",
     "delete": "O'chirish",
     "save": "Saqlash",
+    "select_on_map": "Xaritadan tanlash",
     "cancel": "Bekor qilish",
     "modal": {
         "create_title": "Yaratish",
