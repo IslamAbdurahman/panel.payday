@@ -58,11 +58,16 @@ export default function MiniApp() {
 
         initTelegram();
 
-        // Get coordinates just in case we need them
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                (err) => console.log("Geolocation error", err)
+                (err) => {
+                    console.error("Geolocation error", err);
+                    if (window.Telegram?.WebApp?.showAlert) {
+                        window.Telegram.WebApp.showAlert("Joylashuvni aniqlab bo'lmadi. Telefoningizdan ilovaga GPS ruxsatini bering.");
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
 
@@ -105,6 +110,22 @@ export default function MiniApp() {
     };
 
     const triggerAction = (type: 'checkIn' | 'checkOut') => {
+        if (!location) {
+            if (window.Telegram?.WebApp?.showAlert) {
+                window.Telegram.WebApp.showAlert("Iltimos, avvalo qurilmangizdan joylashuv (GPS) aniqlanishiga ruxsat bering! Busiz davomat olinmaydi.");
+            } else alert("Joylashuv (GPS) aniqlanmadi.");
+            
+            // Try fetching again
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    (err) => console.error("Geolocation error", err),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            }
+            return;
+        }
+
         setPendingAction(type);
         if (fileInputRef.current) {
             fileInputRef.current.click();
