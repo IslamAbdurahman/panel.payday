@@ -243,15 +243,16 @@ export default function MiniApp() {
                 let actionPassed = false;
 
                 if (currentAct === 'togri_qarang') {
-                    // Face must be straight (distances nearly equal)
+                    // Face must be straight (distances nearly equal). 
+                    // Set to 1.25 to account for phone wide-angle distortion and facial asymmetry.
                     const maxDist = Math.max(leftSideDist, rightSideDist);
                     const minDist = Math.min(leftSideDist, rightSideDist);
-                    if (maxDist < minDist * 1.15) {
+                    if (maxDist < minDist * 1.25) {
                         actionPassed = true;
                     }
                 } else if (currentAct === 'yonroqqa_qarang') {
-                    // Face must be turned slightly left or right (diff > 1.2)
-                    if (leftSideDist > rightSideDist * 1.2 || rightSideDist > leftSideDist * 1.2) {
+                    // Face must be turned slightly left or right (diff > 1.35).
+                    if (leftSideDist > rightSideDist * 1.35 || rightSideDist > leftSideDist * 1.35) {
                         actionPassed = true;
                     }
                 }
