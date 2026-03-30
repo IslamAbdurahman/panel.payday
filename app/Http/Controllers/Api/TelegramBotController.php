@@ -84,6 +84,35 @@ class TelegramBotController extends Controller
                 return response()->json(['success' => false, 'message' => 'Xodim topilmadi'], 404);
             }
 
+            // Location validation
+            if ($worker->branch && $worker->branch->latitude && $worker->branch->longitude) {
+                $lat1 = $request->input('latitude');
+                $lon1 = $request->input('longitude');
+
+                if (!$lat1 || !$lon1) {
+                    return response()->json(['success' => false, 'message' => 'Joylashuv ma\'lumoti (GPS) topilmadi. Iltimos Joylashuvga ruxsat bering.'], 400);
+                }
+
+                $lat2 = $worker->branch->latitude;
+                $lon2 = $worker->branch->longitude;
+
+                $earthRadius = 6371000; // in meters
+                $dLat = deg2rad($lat2 - $lat1);
+                $dLon = deg2rad($lon2 - $lon1);
+
+                $a = sin($dLat/2) * sin($dLat/2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon/2) * sin($dLon/2);
+                $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+
+                $distance = $earthRadius * $c;
+
+                if ($distance > 50) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Siz filialdan uzoqdasiz. Hozirgi masofa: ' . round($distance) . ' metr. Davomat olish uchun filialga kamida 50 metr yaqinlashing.'
+                    ], 400);
+                }
+            }
+
             $todayStr = Carbon::now()->toDateString();
 
             // Check if already checked in/out today

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, MapPin, CheckCircle2, XCircle } from 'lucide-react';
+import * as faceapi from 'face-api.js';
 
 // Extend window for Telegram WebApp
 declare global {
@@ -22,6 +23,7 @@ export default function MiniApp() {
     const [actionLoading, setActionLoading] = useState(false);
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [pendingAction, setPendingAction] = useState<'checkIn' | 'checkOut' | null>(null);
+    const [modelsLoaded, setModelsLoaded] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Initialize Telegram WebApp and Auth
@@ -64,6 +66,22 @@ export default function MiniApp() {
             );
         }
 
+        const loadModels = async () => {
+            try {
+                const MODEL_URL = '/models';
+                await Promise.all([
+                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                ]);
+                setModelsLoaded(true);
+            } catch (err) {
+                console.error("Modellarni yuklashda xatolik:", err);
+            }
+        };
+
+        loadModels();
+
     }, []);
 
     const authenticateWorker = async (telegramId: number) => {
@@ -93,14 +111,80 @@ export default function MiniApp() {
         }
     };
 
+    const verifyFace = async (file: File, avatarUrl: string): Promise<boolean> => {
+        try {
+            // Load the snapshot as an HTML image
+            const snapshotImg = await faceapi.bufferToImage(file);
+            
+            // Generate descriptor for the snapshot
+            const snapshotDetection = await faceapi.detectSingleFace(snapshotImg, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+            if (!snapshotDetection) {
+                if (window.Telegram?.WebApp?.showAlert) {
+                    window.Telegram.WebApp.showAlert("Rasmdan yuzni aniqlab bo'lmadi! Iltimos, yuzingizni yorug'roq joyda kameraga to'g'irlab qayta urinib ko'ring.");
+                } else alert("Yuz aniqlanmadi.");
+                return false;
+            }
+
+            // Load the avatar image
+            const avatarImg = await faceapi.fetchImage(`/storage/${avatarUrl}`);
+            const avatarDetection = await faceapi.detectSingleFace(avatarImg, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+
+            if (!avatarDetection) {
+                if (window.Telegram?.WebApp?.showAlert) {
+                    window.Telegram.WebApp.showAlert("Bazadagi profil rasmingizdan yuz aniqlanmadi. Adminstratorga murojaat qiling.");
+                } else alert("Bazadagi rasm yaroqsiz.");
+                return false;
+            }
+
+            // Compare
+            const distance = faceapi.euclideanDistance(snapshotDetection.descriptor, avatarDetection.descriptor);
+            console.log("Face distance", distance);
+            
+            // Standard distance threshold for face recognition is 0.6
+            if (distance < 0.6) {
+                return true;
+            } else {
+                if (window.Telegram?.WebApp?.showAlert) {
+                    window.Telegram.WebApp.showAlert("Kechirasiz, yuzingiz tizimdagi profil rasmingizga (avatarga) mos kelmadi!");
+                } else alert("Yuzingiz mos kelmadi.");
+                return false;
+            }
+
+        } catch (error) {
+            console.error(error);
+            if (window.Telegram?.WebApp?.showAlert) {
+                window.Telegram.WebApp.showAlert("Yuzni solishtirishda kutilmagan xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
+            }
+            return false;
+        }
+    };
+
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !pendingAction || !worker?.telegram_id) {
             setPendingAction(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
         
         setActionLoading(true);
+
+        if (worker?.avatar && modelsLoaded) {
+            const isMatch = await verifyFace(file, worker.avatar);
+            if (!isMatch) {
+                setActionLoading(false);
+                setPendingAction(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+        } else if (!worker?.avatar) {
+            if (window.Telegram?.WebApp?.showAlert) {
+                window.Telegram.WebApp.showAlert("Tizimda profil rasmingiz kiritilmagan. Davomat yuz aniqlash funksiyasisiz olinadi.");
+            }
+        } else if (!modelsLoaded) {
+            console.warn("Yuzni tanish modellari hali yuklanmagan...");
+        }
+
         try {
             const formData = new FormData();
             formData.append('telegram_id', worker.telegram_id.toString());

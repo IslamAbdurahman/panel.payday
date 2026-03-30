@@ -31,6 +31,8 @@ class StoreBranchRequest extends FormRequest
             'hour_price' => 'required',
             'fine_price' => 'required|numeric|min:0',
             'telegram_group_id' => 'nullable|string',
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
         ];
     }
 

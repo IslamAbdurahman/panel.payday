@@ -37,6 +37,8 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
         hour_price: branch.hour_price,
         fine_price: branch.fine_price,
         telegram_group_id: branch.telegram_group_id ?? '',
+        latitude: branch.latitude ?? '',
+        longitude: branch.longitude ?? '',
         status: branch.status,
     });
 
@@ -50,6 +52,8 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
             hour_price: branch.hour_price,
             fine_price: branch.fine_price,
             telegram_group_id: branch.telegram_group_id ?? '',
+            latitude: branch.latitude ?? '',
+            longitude: branch.longitude ?? '',
             status: branch.status,
         });
     }, [branch, setData]);
@@ -164,6 +168,19 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
                             onChange={(e) => setData('telegram_group_id', e.target.value)}
                         />
                         <InputError message={errors.telegram_group_id} />
+                    </div>
+
+                    <div className="flex w-full gap-4">
+                        <div className="w-1/2">
+                            <Label htmlFor="latitude">{t('latitude')}</Label>
+                            <Input id="latitude" value={data.latitude} onChange={(e) => setData('latitude', e.target.value)} placeholder="41.2995" />
+                            <InputError message={errors.latitude as string} />
+                        </div>
+                        <div className="w-1/2">
+                            <Label htmlFor="longitude">{t('longitude')}</Label>
+                            <Input id="longitude" value={data.longitude} onChange={(e) => setData('longitude', e.target.value)} placeholder="69.2401" />
+                            <InputError message={errors.longitude as string} />
+                        </div>
                     </div>
 
                     <div>

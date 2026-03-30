@@ -253,6 +253,8 @@ export interface Branch {
     hour_price: number;
     fine_price: number;
     telegram_group_id?: string;
+    latitude?: string;
+    longitude?: string;
     status: number;
     branch_days?: BranchDay[];
     branch_devices?: BranchDevice[];

@@ -31,6 +31,8 @@ class UpdateBranchRequest extends FormRequest
             'fine_price' => 'required|numeric|min:0',
             'status' => 'required',
             'telegram_group_id' => 'nullable|string',
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
         ];
     }
 

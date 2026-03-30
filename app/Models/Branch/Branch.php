@@ -23,7 +23,9 @@ class Branch extends Model
         'hour_price',
         'fine_price',
         'status',
-        'telegram_group_id'
+        'telegram_group_id',
+        'latitude',
+        'longitude'
     ];
 
     protected $with = [

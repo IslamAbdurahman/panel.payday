@@ -40,6 +40,8 @@ export default function CreateBranchModal({ firm }: createBranch) {
         hour_price: '',
         fine_price: '',
         telegram_group_id: '',
+        latitude: '',
+        longitude: '',
         status: 1,
     });
 
@@ -149,6 +151,19 @@ export default function CreateBranchModal({ firm }: createBranch) {
                         <Label htmlFor="telegram_group_id">{t('telegram_group_id')}</Label>
                         <Input id="telegram_group_id" value={data.telegram_group_id} onChange={(e) => setData('telegram_group_id', e.target.value)} />
                         <InputError message={errors.telegram_group_id} />
+                    </div>
+
+                    <div className="flex w-full gap-4">
+                        <div className="w-1/2">
+                            <Label htmlFor="latitude">{t('latitude')}</Label>
+                            <Input id="latitude" value={data.latitude} onChange={(e) => setData('latitude', e.target.value)} placeholder="41.2995" />
+                            <InputError message={errors.latitude as string} />
+                        </div>
+                        <div className="w-1/2">
+                            <Label htmlFor="longitude">{t('longitude')}</Label>
+                            <Input id="longitude" value={data.longitude} onChange={(e) => setData('longitude', e.target.value)} placeholder="69.2401" />
+                            <InputError message={errors.longitude as string} />
+                        </div>
                     </div>
 
                     <DialogFooter className="gap-2">
