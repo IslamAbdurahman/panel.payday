@@ -163,43 +163,46 @@ class TelegramService
 
             $removeKeyboard = Keyboard::remove(['selective' => false]);
 
-            if ($user) {
-                $user->telegram_id = $chatId;
-                $user->save();
+            if ($user || $worker) {
 
-                $this->sendSafeMessage(
-                    $chatId,
-                    "👋 Admin Payday tizimiga xush kelibsiz, <b>{$user->name}</b>.",
-                    $removeKeyboard
-                );
-            }
-            
-            if ($worker) {
-                $worker->telegram_id = $chatId;
-                $worker->save();
+                if ($user) {
+                    $user->telegram_id = $chatId;
+                    $user->save();
 
-                $this->sendSafeMessage(
-                    $chatId,
-                    "✅ Telefon raqamingiz muvaffaqiyatli tasdiqlandi!\n\n👋 Xush kelibsiz, <b>{$worker->name}</b>!",
-                    $removeKeyboard
-                );
+                    $this->sendSafeMessage(
+                        $chatId,
+                        "👋 Admin Payday tizimiga xush kelibsiz, <b>{$user->name}</b>.",
+                        $removeKeyboard
+                    );
+                }
 
-                $webAppKeyboard = Keyboard::make([
-                    'inline_keyboard' => [
-                        [
-                            Keyboard::inlineButton([
-                                'text' => '📱 Davomat (Mini App)',
-                                'web_app' => ['url' => secure_url('/bot/mini-app')]
-                            ])
+                if ($worker) {
+                    $worker->telegram_id = $chatId;
+                    $worker->save();
+
+                    $this->sendSafeMessage(
+                        $chatId,
+                        "✅ Telefon raqamingiz muvaffaqiyatli tasdiqlandi!\n\n👋 Xush kelibsiz, <b>{$worker->name}</b>!",
+                        $removeKeyboard
+                    );
+
+                    $webAppKeyboard = Keyboard::make([
+                        'inline_keyboard' => [
+                            [
+                                Keyboard::inlineButton([
+                                    'text' => '📱 Davomat (Mini App)',
+                                    'web_app' => ['url' => secure_url('/bot/mini-app')]
+                                ])
+                            ]
                         ]
-                    ]
-                ]);
+                    ]);
 
-                $this->sendSafeMessage(
-                    $chatId,
-                    "Quyidagi tugma orqali davomat ilovasidan bemalol hisobot topshirishingiz mumkin 👇",
-                    $webAppKeyboard
-                );
+                    $this->sendSafeMessage(
+                        $chatId,
+                        "Quyidagi tugma orqali davomat ilovasidan bemalol hisobot topshirishingiz mumkin 👇",
+                        $webAppKeyboard
+                    );
+                }
             }
             else {
                 $this->sendSafeMessage(

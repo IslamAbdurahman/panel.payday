@@ -312,20 +312,31 @@ export default function MiniApp() {
 
     const captureAndVerify = async () => {
         if (!videoRef.current || !canvasRef.current) return;
-
-        // Draw to canvas
+        
         const videoEl = videoRef.current;
         const canvasEl = canvasRef.current;
-        canvasEl.width = videoEl.videoWidth;
-        canvasEl.height = videoEl.videoHeight;
+        
+        // Massive Size Reduction (10x smaller)
+        const MAX_WIDTH = 480;
+        let cWidth = videoEl.videoWidth;
+        let cHeight = videoEl.videoHeight;
+        
+        if (cWidth > MAX_WIDTH) {
+            cHeight = Math.floor(cHeight * (MAX_WIDTH / cWidth));
+            cWidth = MAX_WIDTH;
+        }
+
+        canvasEl.width = cWidth;
+        canvasEl.height = cHeight;
+        
         const ctx = canvasEl.getContext('2d');
         if (ctx) {
             // We DONT explicitly flip the canvas, we just draw the raw frame.
-            ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+            ctx.drawImage(videoEl, 0, 0, cWidth, cHeight);
         }
-
-        // Convert to blob
-        const blob = await new Promise<Blob | null>(resolve => canvasEl.toBlob(resolve, 'image/jpeg', 0.9));
+        
+        // Convert to blob (Use 0.6 quality for massive size savings)
+        const blob = await new Promise<Blob | null>(resolve => canvasEl.toBlob(resolve, 'image/jpeg', 0.6));
         if (!blob) {
             alert("Rasm olishda xatolik yuz berdi.");
             stopCamera();
