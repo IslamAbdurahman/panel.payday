@@ -128,7 +128,8 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
     return (
         <div className="relative h-[450px] w-full overflow-hidden rounded-md border border-gray-300 dark:border-gray-600">
             {/* SEARCH OVERLAY */}
-            <div ref={searchRef} className="absolute top-2 left-2 z-[1001] w-[300px] sm:w-[400px]">
+            <div ref={searchRef} className="absolute top-2 left-12 z-[1001] w-[300px] sm:w-[400px]">
+
                 <div className="relative">
                     <div className="relative">
                         <LucideSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
