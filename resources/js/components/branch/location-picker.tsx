@@ -127,58 +127,59 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
 
     return (
         <div className="relative h-[450px] w-full overflow-hidden rounded-md border border-gray-300 dark:border-gray-600">
-            {/* SEARCH OVERLAY */}
-            <div ref={searchRef} className="absolute top-2 left-12 z-[1001] w-[300px] sm:w-[400px]">
-
-                <div className="relative">
+            {/* TOP CONTROLS BAR */}
+            <div className="absolute top-2 left-2 right-2 z-[2000] flex items-start justify-between gap-2 pointer-events-none">
+                {/* SEARCH INPUT - pointer-events-auto to allow interaction */}
+                <div ref={searchRef} className="w-[300px] sm:w-[500px] pointer-events-auto">
                     <div className="relative">
-                        <LucideSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                        <Input
-                            placeholder="Manzilni qidiring..."
-                            className="bg-white pl-10 pr-10 shadow-lg dark:bg-gray-800"
-                            value={searchQuery}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            onFocus={() => searchQuery.length >= 3 && setShowResults(true)}
-                        />
-                        {isSearching && (
-                            <LucideLoader2 className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400" />
+                        <div className="relative">
+                            <LucideSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <Input
+                                placeholder="Manzilni qidiring..."
+                                className="h-10 bg-white/95 pl-10 pr-10 shadow-xl backdrop-blur-sm dark:bg-gray-800/95"
+                                value={searchQuery}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                onFocus={() => searchQuery.length >= 3 && setShowResults(true)}
+                            />
+                            {isSearching && (
+                                <LucideLoader2 className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400" />
+                            )}
+                        </div>
+
+                        {showResults && searchResults.length > 0 && (
+                            <div className="absolute mt-1 w-full overflow-hidden rounded-md border bg-white shadow-2xl dark:bg-gray-800">
+                                {searchResults.map((result, idx) => (
+                                    <button
+                                        key={idx}
+                                        type="button"
+                                        className="flex w-full items-start gap-2 p-3 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        onClick={() => handleSelectResult(result)}
+                                    >
+                                        <LucideMapPin className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+                                        <span className="line-clamp-2">{result.display_name}</span>
+                                    </button>
+                                ))}
+                            </div>
                         )}
                     </div>
-
-                    {showResults && searchResults.length > 0 && (
-                        <div className="absolute mt-1 w-full overflow-hidden rounded-md border bg-white shadow-xl dark:bg-gray-800">
-                            {searchResults.map((result, idx) => (
-                                <button
-                                    key={idx}
-                                    type="button"
-                                    className="flex w-full items-start gap-2 p-3 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    onClick={() => handleSelectResult(result)}
-                                >
-                                    <LucideMapPin className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-                                    <span className="line-clamp-2">{result.display_name}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </div>
-            </div>
 
-            {/* GPS BUTTON */}
-            <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="absolute top-2 right-12 z-[1000] bg-white/90 shadow-lg hover:bg-white dark:bg-gray-800/90"
-                onClick={handleLocateMe}
-                disabled={isLocating}
-            >
-                {isLocating ? (
-                    <LucideLoader2 className="mr-1 h-4 w-4 animate-spin" />
-                ) : (
-                    <LucideTarget className="mr-1 h-4 w-4 text-blue-600" />
-                )}
-                {isLocating ? "..." : "GPS"}
-            </Button>
+                {/* GPS BUTTON - pointer-events-auto to allow interaction */}
+                <Button
+                    type="button"
+                    variant="secondary"
+                    className="h-10 bg-white/95 px-3 shadow-xl backdrop-blur-sm hover:bg-white dark:bg-gray-800/95 pointer-events-auto"
+                    onClick={handleLocateMe}
+                    disabled={isLocating}
+                >
+                    {isLocating ? (
+                        <LucideLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <LucideTarget className="mr-2 h-4 w-4 text-blue-600" />
+                    )}
+                    {isLocating ? "..." : "GPS"}
+                </Button>
+            </div>
 
             <MapContainer
                 center={[defaultLat, defaultLng]}
