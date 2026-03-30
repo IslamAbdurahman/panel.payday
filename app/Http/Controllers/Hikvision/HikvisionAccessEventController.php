@@ -67,18 +67,28 @@ class HikvisionAccessEventController extends Controller
             DB::beginTransaction();
 
             if ($hikvisionAccessEvent) {
-                $shortSerial = $hikvisionAccessEvent->hikvisionAccess->shortSerialNumber;
+                // Delete Picture
                 $picture = $hikvisionAccessEvent->picture;
-                $filePath = public_path("storage/hikvision/{$shortSerial}/{$picture}");
+                if ($picture) {
+                    $shortSerial = $hikvisionAccessEvent->hikvisionAccess->shortSerialNumber ?? 'UNKNOWN';
+                    $filePath = str_contains($picture, '/')
+                        ? public_path("storage/{$picture}")
+                        : public_path("storage/hikvision/{$shortSerial}/{$picture}");
 
-                if (is_file($filePath)) {
-                    unlink($filePath);
+                    if (is_file($filePath)) {
+                        unlink($filePath);
+                    }
+                }
+
+                $hikvisionAccessEvent->faceReact()->delete();
+                $hikvisionAccessEvent->delete();
+
+                // Only delete the parent HikvisionAccess if it's NOT the shared Telegram dummy record
+                $shortSerial = $hikvisionAccessEvent->hikvisionAccess->shortSerialNumber ?? '';
+                if ($shortSerial !== 'TELEGRAM') {
+                    $hikvisionAccessEvent->hikvisionAccess()->delete();
                 }
             }
-
-            $hikvisionAccessEvent->faceReact()->delete();
-            $hikvisionAccessEvent->delete();
-            $hikvisionAccessEvent->hikvisionAccess()->delete();
 
             DB::commit();
 
