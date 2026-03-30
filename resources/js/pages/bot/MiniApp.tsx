@@ -39,6 +39,10 @@ export default function MiniApp() {
     const [cameraFeedback, setCameraFeedback] = useState<string>("Kamera ishga tushmoqda...");
     const [livenessPassed, setLivenessPassed] = useState(false);
     
+    const livenessQueueRef = useRef<LivenessAction[]>([]);
+    const actionIndexRef = useRef<number>(0);
+    const livenessPassedRef = useRef<boolean>(false);
+    
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const loopRef = useRef<number | null>(null);
@@ -188,13 +192,18 @@ export default function MiniApp() {
 
         setPendingAction(type);
         setLivenessPassed(false);
+        livenessPassedRef.current = false;
         setCameraFeedback("Kameraga qarab turing...");
         
         // State Transition Liveness Protocol
         // 1. Must see a straight frontal face (to prevent side-photo spoofing)
         // 2. Must see a turned face (to prevent straight-photo spoofing)
-        setLivenessQueue(['togri_qarang', 'yonroqqa_qarang']);
+        const queue: LivenessAction[] = ['togri_qarang', 'yonroqqa_qarang'];
+        setLivenessQueue(queue);
+        livenessQueueRef.current = queue;
+        
         setCurrentActionIndex(0);
+        actionIndexRef.current = 0;
         
         setIsCameraActive(true);
         try {
@@ -215,7 +224,7 @@ export default function MiniApp() {
     };
 
     const processLiveness = async () => {
-        if (!videoRef.current || videoRef.current.paused || videoRef.current.ended || livenessPassed) return;
+        if (!videoRef.current || videoRef.current.paused || videoRef.current.ended || livenessPassedRef.current) return;
 
         try {
             const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
@@ -239,7 +248,7 @@ export default function MiniApp() {
                 const topNoseDist = Math.hypot(nose.x - eyeMidX, nose.y - eyeMidY);
                 const bottomNoseDist = Math.hypot(chin.x - nose.x, chin.y - nose.y);
 
-                const currentAct = livenessQueue[currentActionIndex];
+                const currentAct = livenessQueueRef.current[actionIndexRef.current];
 
                 setCameraFeedback(ACTION_LABELS[currentAct]);
 
@@ -261,12 +270,13 @@ export default function MiniApp() {
                 }
 
                 if (actionPassed) {
-                    if (currentActionIndex + 1 < livenessQueue.length) {
-                        // Play a little success tone if possible, then switch action
-                        setCurrentActionIndex(curr => curr + 1);
+                    if (actionIndexRef.current + 1 < livenessQueueRef.current.length) {
+                        actionIndexRef.current += 1;
+                        setCurrentActionIndex(actionIndexRef.current);
                     } else {
                         // All actions complete!
                         setLivenessPassed(true);
+                        livenessPassedRef.current = true;
                         setCameraFeedback("Ajoyib! Yuz mosligi tekshirilmoqda...");
                         await captureAndVerify();
                         return; // Stop the loop entirely
@@ -279,7 +289,7 @@ export default function MiniApp() {
             console.error("Liveness exception", e);
         }
 
-        if (isCameraActive && !livenessPassed) {
+        if (isCameraActive && !livenessPassedRef.current) {
             // Processing delay to avoid heavy CPU block on mobile
             setTimeout(() => {
                 loopRef.current = requestAnimationFrame(processLiveness);
