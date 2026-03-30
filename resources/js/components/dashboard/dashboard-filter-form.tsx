@@ -2,6 +2,7 @@ import React from 'react';
 import { Branch, Firm, SearchData } from '@/types';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 
 interface SearchFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -56,11 +57,13 @@ const DashboardFilterForm = ({ handleSubmit, setData, data, firms, branches }: S
                     </select>
                 }
 
-                {/* Submit button to apply filter */}
-                <button type="submit"
-                        className="inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:outline-none text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 px-4 py-2 text-sm font-medium text-gray-900 border  border-gray-200 rounded-e-lg hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:border-gray-700 dark:text-white dark:hover:text-white dark:focus:text-white">
-                    <Search className={'text-sm text-white-500 dark:text-white-400'} size={20} />
-                </button>
+                <Button
+                    type="submit"
+                    variant="info"
+                    className="rounded-s-none rounded-e-lg border-l-0"
+                >
+                    <Search className="h-5 w-5 text-white" />
+                </Button>
             </div>
         </form>
 

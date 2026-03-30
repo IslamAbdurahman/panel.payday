@@ -5,6 +5,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { Salary, type SalaryPaginate, SearchData } from '@/types';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 
 interface SalaryTableProps extends SalaryPaginate {
@@ -100,12 +101,13 @@ const SalaryTable = ({ searchData, ...salary }: SalaryTableProps) => {
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
 
                                     <div className="inline-flex shadow-sm">
-                                        <button
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
                                             onClick={() => handleDeleteClick(item)}
-                                            className="bg-red-500 px-4 py-2 text-sm font-medium text-white-700 border-t border-b border-s border-gray-400 hover:text-black hover:bg-gray-100 focus:z-10 rounded-r-md"
                                         >
                                             <TrashIcon className="w-4 h-4" />
-                                        </button>
+                                        </Button>
                                     </div>
 
 

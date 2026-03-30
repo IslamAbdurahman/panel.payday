@@ -6,6 +6,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { User, type UserPaginate, SearchData } from '@/types';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface UserTableProps extends UserPaginate {
     searchData: SearchData;
@@ -100,19 +101,25 @@ const UserTable = ({ searchData, ...user }: UserTableProps) => {
 
                                     <div className="inline-flex shadow-sm">
 
-                                        <button
+                                    <div className="inline-flex shadow-sm">
+                                        <Button
+                                            variant="success"
+                                            size="sm"
                                             onClick={() => handleUpdateClick(item)}
-                                            className="bg-green-600 px-4 py-2 text-sm font-medium text-white-700 border border-gray-400 hover:text-black hover:bg-gray-100 focus:z-10 rounded-l-md"
+                                            className="rounded-r-none border-r-0"
                                         >
                                             <PencilIcon className="w-4 h-4" />
-                                        </button>
+                                        </Button>
 
-                                        <button
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
                                             onClick={() => handleDeleteClick(item)}
-                                            className="bg-red-500 px-4 py-2 text-sm font-medium text-white-700 border-t border-b border-gray-400 hover:text-black hover:bg-gray-100 focus:z-10 rounded-r-md"
+                                            className="rounded-l-none"
                                         >
                                             <TrashIcon className="w-4 h-4" />
-                                        </button>
+                                        </Button>
+                                    </div>
                                     </div>
 
 

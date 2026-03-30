@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import React, { useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 
 interface SearchFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -182,14 +183,14 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                     </select>
                 )}
 
-                {/* Submit button to apply filter */}
-                <button
+                <Button
                     type="submit"
-                    className="flex items-center justify-center gap-2 rounded border border-gray-200 bg-blue-700 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-blue-800 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 focus:outline-none dark:border-gray-700 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-800"
+                    variant="info"
+                    className="flex items-center justify-center gap-2"
                 >
-                    <Search className="text-white dark:text-white" size={20} />
+                    <Search className="h-5 w-5 text-white" />
                     <span className="lg:hidden">{t('search')}</span>
-                </button>
+                </Button>
             </div>
         </form>
     );

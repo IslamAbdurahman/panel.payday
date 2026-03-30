@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CreateSalaryPaymentModal from '@/components/salary_payment/create-salary_payment-modal';
 import { PencilIcon, TrashIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import UpdateSalaryPaymentModal from '@/components/salary_payment/update-salary_payment-modal';
 import DeleteItemModal from '@/components/delete-item-modal';
 import { Link, useForm } from '@inertiajs/react';
@@ -96,20 +97,23 @@ const Salary_paymentTable = ({ searchData, workers, ...salary_payment }: SalaryP
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
 
                                     <div className="inline-flex shadow-sm">
-
-                                        <button
+                                        <Button
+                                            variant="warning"
+                                            size="sm"
                                             onClick={() => handleUpdateClick(item)}
-                                            className="bg-green-600 px-4 py-2 text-sm font-medium text-white-700 border border-gray-400 hover:text-black hover:bg-gray-100 focus:z-10"
+                                            className="rounded-none rounded-l-md"
                                         >
                                             <PencilIcon className="w-4 h-4" />
-                                        </button>
+                                        </Button>
 
-                                        <button
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
                                             onClick={() => handleDeleteClick(item)}
-                                            className="bg-red-500 px-4 py-2 text-sm font-medium text-white-700 border-t border-b border-gray-400 hover:text-black hover:bg-gray-100 focus:z-10 rounded-r-md"
+                                            className="rounded-none rounded-r-md border-l-0"
                                         >
                                             <TrashIcon className="w-4 h-4" />
-                                        </button>
+                                        </Button>
                                     </div>
 
 

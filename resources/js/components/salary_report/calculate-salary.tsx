@@ -65,8 +65,8 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
 
     return (
         <div className={'border-white'}>
-            <h3 className={'py-2 text-center capitalize'}>{t('salary')}</h3>
-            <div className="overflow-x-auto rounded border-2 border-solid border-gray-400 p-4">
+            <h3 className={'py-2 text-center capitalize text-gray-900 dark:text-gray-100'}>{t('salary')}</h3>
+            <div className="overflow-x-auto rounded border-2 border-solid border-gray-400 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
                 <form className="space-y-4" onSubmit={submit}>
                     <div>
                         <Label htmlFor="amount">{t('amount')}</Label>

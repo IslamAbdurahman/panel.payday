@@ -60,7 +60,7 @@ export default function CreateBranchModal({ firm }: createBranch) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className={'px-1 py-1 text-sm font-medium bg-blue-600 text-white dark:bg-blue-600 '}>
+                <Button variant="info" size="sm" className="px-2">
                     <IoCreate />
                 </Button>
             </DialogTrigger>

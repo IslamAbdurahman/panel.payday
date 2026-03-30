@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Branch, SearchData, type Worker, WorkerPaginate } from '@/types';
 import DeleteItemModal from '@/components/delete-item-modal';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import CreateWorkerModal from '@/components/branch/create-worker-modal';
 import UpdateWorkerModal from '@/components/branch/update-worker-modal';
 
@@ -120,26 +121,34 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.balance}</td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                         <div className="inline-flex shadow-sm">
-                                            <Link
-                                                href={`/worker/show_history/${item.id}`}
-                                                className="text-white-700 rounded-l-md border border-gray-400 bg-gray-500 px-4 py-2 text-sm font-medium hover:bg-gray-100 hover:text-black focus:z-10"
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                asChild
+                                                className="rounded-none rounded-l-md"
                                             >
-                                                <EyeIcon className="h-4 w-4" />
-                                            </Link>
+                                                <Link href={`/worker/show_history/${item.id}`}>
+                                                    <EyeIcon className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
 
-                                            <button
+                                            <Button
+                                                variant="warning"
+                                                size="sm"
                                                 onClick={() => handleUpdateClick(item)}
-                                                className="text-white-700 border border-gray-400 bg-green-600 px-4 py-2 text-sm font-medium hover:bg-gray-100 hover:text-black focus:z-10"
+                                                className="rounded-none border-x-0"
                                             >
                                                 <PencilIcon className="h-4 w-4" />
-                                            </button>
+                                            </Button>
 
-                                            <button
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
                                                 onClick={() => handleDeleteClick(item)}
-                                                className="text-white-700 rounded-r-md border-t border-b border-gray-400 bg-red-500 px-4 py-2 text-sm font-medium hover:bg-gray-100 hover:text-black focus:z-10"
+                                                className="rounded-none rounded-r-md"
                                             >
                                                 <TrashIcon className="h-4 w-4" />
-                                            </button>
+                                            </Button>
                                         </div>
                                     </td>
                                 </tr>

@@ -108,28 +108,28 @@ const RightBar = ({ ...report }: Report) => {
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600"></td>
                         </tr>
                         <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <th className="border border-gray-300 bg-red-500 px-4 py-2 dark:border-gray-600">{t('late_hours')}</th>
+                            <th className="border border-gray-300 bg-red-500 text-white px-4 py-2 dark:border-gray-600">{t('late_hours')}</th>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                 {~~(report.late_minutes / 60)} {t('hour')} {report.late_minutes % 60} {t('minute')}
                             </td>
                         </tr>
                         <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <th className="border border-gray-300 bg-red-500 px-4 py-2 dark:border-gray-600">{t('fine')}</th>
+                            <th className="border border-gray-300 bg-red-500 text-white px-4 py-2 dark:border-gray-600">{t('fine')}</th>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                 {(() => {
                                     const lateMinutes = report.late_minutes ?? 0;
                                     const finePrice = report.fine_price ?? 0;
-
+ 
                                     if (lateMinutes <= 0 || finePrice <= 0) return 0;
-
+ 
                                     const totalFine = (lateMinutes / 60) * finePrice;
-
+ 
                                     return formatCurrency(totalFine);
                                 })()}
                             </td>
                         </tr>
                         <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <th className="border border-gray-300 bg-red-500 px-4 py-2 dark:border-gray-600">{t('late_days')}</th>
+                            <th className="border border-gray-300 bg-red-500 text-white px-4 py-2 dark:border-gray-600">{t('late_days')}</th>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                 {report.late_days} {t('day')}
                             </td>

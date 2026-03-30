@@ -4,6 +4,7 @@ import BranchHolidayTable from '@/components/branch/branch-holiday-table';
 import WorkerTable from '@/components/branch/worker-table';
 import MobileSearchModal from '@/components/MobileSearchModal';
 import SearchForm from '@/components/search-form';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type Branch, type BreadcrumbItem, Day, SearchData, WorkerPaginate } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
@@ -66,14 +67,11 @@ export default function Branch() {
 
                 {/* Table */}
                 <div className="overflow-x-auto pt-3">
-                    <Link
-                        href={`/daily_attendance/${branch.id}`}
-                        className={
-                            'me-2 mb-2 rounded-lg border border-green-700 px-5 py-2.5 text-center text-sm font-medium text-green-700 hover:bg-green-800 hover:text-white focus:ring-4 focus:ring-green-300 focus:outline-none dark:border-green-500 dark:text-green-500 dark:hover:bg-green-600 dark:hover:text-white dark:focus:ring-green-800'
-                        }
-                    >
-                        {t('daily_attendance')}
-                    </Link>
+                    <Button variant="success" asChild className="mb-4">
+                        <Link href={`/daily_attendance/${branch.id}`}>
+                            {t('daily_attendance')}
+                        </Link>
+                    </Button>
                     <div className={'grid grid-cols-12 gap-4'}>
                         <div className={'col-span-12 sm:col-span-12 md:col-span-12 lg:col-span-8'}>
                             {branch.workers && <WorkerTable worker={worker} branch={branch} searchData={data} />}

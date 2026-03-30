@@ -2,6 +2,7 @@ import { SearchData, WorkerPaginate } from '@/types';
 import { Link } from '@inertiajs/react';
 import { CheckCircle, CheckIcon, DownloadIcon, MinusIcon, MoonStar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -131,9 +132,14 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
         <div>
             {/*<h3 className="capitalize text-center py-2">{t('attendance')}</h3>*/}
 
-            <button onClick={exportToExcel} className="mb-4 rounded bg-green-600 px-2 py-1 text-white transition hover:bg-green-700">
-                {t('excel')} <DownloadIcon className={'inline'} />
-            </button>
+            <Button
+                variant="success"
+                size="sm"
+                onClick={exportToExcel}
+                className="mb-4"
+            >
+                {t('excel')} <DownloadIcon className="ml-2 h-4 w-4" />
+            </Button>
 
             <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left text-sm text-gray-800 dark:text-gray-100">

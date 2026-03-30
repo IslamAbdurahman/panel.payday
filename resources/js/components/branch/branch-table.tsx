@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import UpdateBranchModal from '@/components/branch/update-branch-modal';
+import { Button } from '@/components/ui/button';
 import { CalendarIcon, CheckCircle, MinusCircle, PencilIcon, TrashIcon } from 'lucide-react';
 import { Link, useForm } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
@@ -103,24 +104,33 @@ const BranchTable = ({ firm }: BranchTableProps) => {
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
 
                                         <div className="inline-flex shadow-sm">
-                                            <Link href={`/daily_attendance/${item.id}`}
-                                                className="bg-gray-700 px-4 py-2 text-sm font-medium text-white-700 border border-gray-400 hover:text-black hover:bg-gray-100 focus:z-10 rounded-l-md"
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                asChild
+                                                className="rounded-none rounded-l-md"
                                             >
-                                                <CalendarIcon className="w-4 h-4" />
-                                            </Link>
-                                            <button
+                                                <Link href={`/daily_attendance/${item.id}`}>
+                                                    <CalendarIcon className="w-4 h-4" />
+                                                </Link>
+                                            </Button>
+                                            <Button
+                                                variant="warning"
+                                                size="sm"
                                                 onClick={() => handleUpdateClick(item)}
-                                                className="bg-green-600 px-4 py-2 text-sm font-medium text-white-700 border border-gray-400 hover:text-black hover:bg-gray-100 focus:z-10 "
+                                                className="rounded-none border-x-0"
                                             >
                                                 <PencilIcon className="w-4 h-4" />
-                                            </button>
+                                            </Button>
 
-                                            <button
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
                                                 onClick={() => handleDeleteClick(item)}
-                                                className="bg-red-500 px-4 py-2 text-sm font-medium text-white-700 border-t border-b border-gray-400 hover:text-black hover:bg-gray-100 focus:z-10 rounded-r-md"
+                                                className="rounded-none rounded-r-md"
                                             >
                                                 <TrashIcon className="w-4 h-4" />
-                                            </button>
+                                            </Button>
                                         </div>
 
 

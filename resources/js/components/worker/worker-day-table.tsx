@@ -1,6 +1,7 @@
 import DeleteItemModal from '@/components/delete-item-modal';
 import CreateWorkerDayModal from '@/components/worker/create-worker-day-modal';
 import { Day, Worker, WorkerDay } from '@/types';
+import { Button } from '@/components/ui/button';
 import { useForm } from '@inertiajs/react';
 import { TrashIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -66,12 +67,13 @@ const WorkerDayTable = ({ worker, days }: WorkerDayTableProps) => {
                                     </td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                         <div className="inline-flex shadow-sm">
-                                            <button
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
                                                 onClick={() => handleDeleteClick(item)}
-                                                className="text-white-700 rounded border border-gray-400 bg-red-500 px-3 py-2 text-sm font-medium hover:bg-gray-100 hover:text-black focus:z-10"
                                             >
                                                 <TrashIcon className="h-4 w-4" />
-                                            </button>
+                                            </Button>
                                         </div>
                                     </td>
                                 </tr>
