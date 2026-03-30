@@ -17,9 +17,9 @@ declare global {
 
 type LivenessAction = 'togri_qarang' | 'chapga_qarang' | 'ongga_qarang';
 const ACTION_LABELS: Record<LivenessAction, string> = {
-    togri_qarang: "Dastlab kameraga TO'G'RI qarang 📸",
     chapga_qarang: "Endi boshingizni CHAPGA buring ⬅️",
-    ongga_qarang: "Endi boshingizni O'NGGA buring ➡️"
+    ongga_qarang: "Endi boshingizni O'NGGA buring ➡️",
+    togri_qarang: "Dastlab kameraga TO'G'RI qarang 📸",
 };
 
 export default function MiniApp() {
