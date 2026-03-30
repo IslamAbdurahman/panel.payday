@@ -66,57 +66,80 @@ class TelegramBotController extends Controller
      */
     public function recordAttendance(Request $request)
     {
-        $request->validate([
-            'telegram_id' => 'required|numeric',
-            'type' => 'required|in:checkIn,checkOut',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-        ]);
-
-        $telegram_id = $request->input('telegram_id');
-        $type = $request->input('type');
-
-        $worker = Worker::query()->where('telegram_id', $telegram_id)->first();
-
-        if (!$worker) {
-            return response()->json(['success' => false, 'message' => 'Xodim topilmadi'], 404);
-        }
-
-        $todayStr = Carbon::now()->toDateString();
-
-        // Check if already checked in/out today
-        $exists = HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
-            ->whereDate('created_at', $todayStr)
-            ->where('attendanceStatus', $type)
-            ->exists();
-
-        if ($exists) {
-            return response()->json([
-                'success' => false,
-                'message' => $type === 'checkIn' ? 'Siz bugun ishga kelganingizni belgilagansiz' : 'Siz bugun ishdan ketganingizni belgilagansiz',
-            ], 400);
-        }
-
         try {
+            $request->validate([
+                'telegram_id' => 'required|numeric',
+                'type' => 'required|in:checkIn,checkOut',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+                'picture' => 'required|image|max:5120', // Max 5MB
+            ]);
+
+            $telegram_id = $request->input('telegram_id');
+            $type = $request->input('type');
+
+            $worker = Worker::query()->where('telegram_id', $telegram_id)->first();
+
+            if (!$worker) {
+                return response()->json(['success' => false, 'message' => 'Xodim topilmadi'], 404);
+            }
+
+            $todayStr = Carbon::now()->toDateString();
+
+            // Check if already checked in/out today
+            $exists = \App\Models\Hikvision\HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
+                ->whereDate('created_at', $todayStr)
+                ->where('attendanceStatus', $type)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $type === 'checkIn' ? 'Siz bugun ishga kelganingizni belgilagansiz' : 'Siz bugun ishdan ketganingizni belgilagansiz',
+                ], 400);
+            }
+
+            // Provide a dummy HikvisionAccess to resolve foreign key constraints
+            $dummyAccess = \App\Models\Hikvision\HikvisionAccess::firstOrCreate(
+                ['ipAddress' => '127.0.0.1', 'protocol' => 'TelegramBot'],
+                [
+                    'portNo' => 80,
+                    'macAddress' => '00:00:00:00:00:00',
+                    'channelId' => 1,
+                    'dateTime' => now(),
+                    'activePostCount' => 1,
+                    'eventType' => 'telegram',
+                    'eventState' => 'active',
+                    'eventDescription' => 'Telegram Mini App',
+                    'shortSerialNumber' => 'TELEGRAM'
+                ]
+            );
+
+            // Handle Picture Upload
+            $picturePath = null;
+            if ($request->hasFile('picture')) {
+                $picturePath = $request->file('picture')->store('attendance/telegram', 'public');
+            }
+
             // Create Access Event
-            $event = HikvisionAccessEvent::create([
-                'hikvision_access_id' => null,
+            $event = \App\Models\Hikvision\HikvisionAccessEvent::create([
+                'hikvision_access_id' => $dummyAccess->id,
                 'deviceName' => 'Telegram_Mini_App',
                 'majorEventType' => 5, // Typical access event
                 'subEventType' => 75, // Typical access event
                 'name' => $worker->name,
                 'cardReaderNo' => 1,
                 'employeeNoString' => $worker->employeeNoString,
-                'serialNo' => null,
+                'serialNo' => 'TEL_' . $worker->id . '_' . time(),
                 'userType' => 'normal',
-                'currentVerifyMode' => 'face', // Or bot logic
+                'currentVerifyMode' => 'face',
                 'frontSerialNo' => null,
                 'attendanceStatus' => $type,
                 'label' => $type === 'checkIn' ? 'Telegramdan Keldi' : 'Telegramdan Ketdi',
                 'mask' => 'unknown',
-                'picturesNumber' => 0,
+                'picturesNumber' => $picturePath ? 1 : 0,
                 'purePwdVerifyEnable' => false,
-                'picture' => null,
+                'picture' => $picturePath,
                 'work_time' => $type === 'checkIn' ? Carbon::now()->format('H:i:s') : null,
                 'end_time' => $type === 'checkOut' ? Carbon::now()->format('H:i:s') : null,
             ]);
@@ -125,7 +148,7 @@ class TelegramBotController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $type === 'checkIn' ? 'Hurmatli xodim, davomat qabul qilindi (Keldim).' : 'Hurmatli xodim, davomat qabul qilindi (Ketdim).',
+                'message' => $type === 'checkIn' ? 'Hurmatli xodim, davomat qabul qilindi (Keldi).' : 'Hurmatli xodim, davomat qabul qilindi (Ketdi).',
                 'time' => $event->created_at->format('H:i')
             ]);
         } catch (\Exception $e) {

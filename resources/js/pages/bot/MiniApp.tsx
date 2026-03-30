@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,8 @@ export default function MiniApp() {
     const [status, setStatus] = useState<any>(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [pendingAction, setPendingAction] = useState<'checkIn' | 'checkOut' | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Initialize Telegram WebApp and Auth
     useEffect(() => {
@@ -84,31 +86,43 @@ export default function MiniApp() {
         }
     };
 
-    const handleAttendance = async (type: 'checkIn' | 'checkOut') => {
-        if (!worker || !worker.telegram_id) return;
+    const triggerAction = (type: 'checkIn' | 'checkOut') => {
+        setPendingAction(type);
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !pendingAction || !worker?.telegram_id) {
+            setPendingAction(null);
+            return;
+        }
         
         setActionLoading(true);
         try {
-            const payload: any = {
-                telegram_id: worker.telegram_id,
-                type
-            };
+            const formData = new FormData();
+            formData.append('telegram_id', worker.telegram_id.toString());
+            formData.append('type', pendingAction);
+            formData.append('picture', file);
+            
             if (location) {
-                payload.latitude = location.lat;
-                payload.longitude = location.lng;
+                formData.append('latitude', location.lat.toString());
+                formData.append('longitude', location.lng.toString());
             }
 
-            const res = await axios.post('/api/bot/attendance', payload);
+            const res = await axios.post('/api/bot/attendance', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             
             if (res.data.success) {
-                // Update local status so the UI changes immediately
                 setStatus((prev: any) => ({
                     ...prev,
-                    [type === 'checkIn' ? 'has_checked_in' : 'has_checked_out']: true,
-                    [type === 'checkIn' ? 'check_in_time' : 'check_out_time']: res.data.time
+                    [pendingAction === 'checkIn' ? 'has_checked_in' : 'has_checked_out']: true,
+                    [pendingAction === 'checkIn' ? 'check_in_time' : 'check_out_time']: res.data.time
                 }));
                 
-                // Show a success alert using Telegram's native popups if available
                 if (window.Telegram?.WebApp?.showAlert) {
                     window.Telegram.WebApp.showAlert(res.data.message);
                 } else {
@@ -124,6 +138,8 @@ export default function MiniApp() {
             }
         } finally {
             setActionLoading(false);
+            setPendingAction(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -200,9 +216,9 @@ export default function MiniApp() {
                                     size="lg" 
                                     className="w-full h-16 text-lg rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white"
                                     disabled={actionLoading}
-                                    onClick={() => handleAttendance('checkIn')}
+                                    onClick={() => triggerAction('checkIn')}
                                 >
-                                    {actionLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Ishga Keldim"}
+                                    {actionLoading && pendingAction === 'checkIn' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Ishga Keldim"}
                                 </Button>
                             )}
                         </CardContent>
@@ -222,11 +238,20 @@ export default function MiniApp() {
                                     variant="outline"
                                     className="w-full h-16 text-lg rounded-xl shadow-sm border-zinc-200"
                                     disabled={actionLoading || !status?.has_checked_in}
-                                    onClick={() => handleAttendance('checkOut')}
+                                    onClick={() => triggerAction('checkOut')}
                                 >
-                                    {actionLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Ishdan Ketdim"}
+                                    {actionLoading && pendingAction === 'checkOut' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Ishdan Ketdim"}
                                 </Button>
                             )}
+                            
+                            <input
+                                type="file"
+                                accept="image/*"
+                                capture="user"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                            />
                             {(!status?.has_checked_in && !status?.has_checked_out) && (
                                 <p className="mt-4 text-xs text-center text-zinc-400">
                                     Siz hali ishga kelganingizni belgilamadingiz. Ruxsat yo'q.
