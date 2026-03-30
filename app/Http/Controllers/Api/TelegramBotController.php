@@ -123,10 +123,11 @@ class TelegramBotController extends Controller
                 'time' => $event->created_at->format('H:i')
             ]);
         } catch (\Exception $e) {
-            Log::error("Davomat olishda xatolik: " . $e->getMessage());
+            Log::error("Davomat olishda xatolik: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Noma\'lum xatolik yuz berdi. Qaytadan urinib ko\'ring.'
+                // 'message' => 'Noma\'lum xatolik yuz berdi. Qaytadan urinib ko\'ring.'
+                'message' => 'Xatolik: ' . $e->getMessage() . ' | Qator: ' . $e->getLine()
             ], 500);
         }
     }
