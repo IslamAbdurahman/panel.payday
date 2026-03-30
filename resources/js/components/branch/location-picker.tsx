@@ -3,7 +3,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { LucideTarget } from 'lucide-react';
+import { LucideTarget, LucideLoader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Fix for default marker icons in Leaflet with Vite
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -43,20 +44,50 @@ function LocationMarker({ lat, lng, onChange }: { lat: number; lng: number; onCh
 }
 
 export default function LocationPicker({ latitude, longitude, onChange }: LocationPickerProps) {
+    const [isLocating, setIsLocating] = useState(false);
     const defaultLat = parseFloat(latitude) || 41.2995; // Tashkent default
     const defaultLng = parseFloat(longitude) || 69.2401;
 
     const handleLocateMe = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    onChange(position.coords.latitude.toString(), position.coords.longitude.toString());
-                },
-                (error) => {
-                    console.error("Error getting location", error);
-                }
-            );
+        if (!navigator.geolocation) {
+            toast.error("Brauzeringiz geolokatsiyani qo'llab-quvvatlamaydi");
+            return;
         }
+
+        setIsLocating(true);
+        toast.info("Joylashuv aniqlanmoqda...");
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude: lat, longitude: lng } = position.coords;
+                onChange(lat.toString(), lng.toString());
+                setIsLocating(false);
+                toast.success("Joylashuv muvaffaqiyatli aniqlandi");
+            },
+            (error) => {
+                setIsLocating(false);
+                console.error("Error getting location", error);
+                
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        toast.error("Geolokatsiyadan foydalanishga ruxsat berilmadi");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        toast.error("Joylashuv ma'lumotlarini olib bo'lmadi");
+                        break;
+                    case error.TIMEOUT:
+                        toast.error("Joylashuvni aniqlash vaqti tugadi");
+                        break;
+                    default:
+                        toast.error("Joylashuvni aniqlashda xatolik yuz berdi");
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
     };
 
     return (
@@ -67,13 +98,18 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
                 size="sm"
                 className="absolute top-2 right-2 z-[1000] bg-white/90 shadow-md hover:bg-white dark:bg-gray-800/90"
                 onClick={handleLocateMe}
+                disabled={isLocating}
             >
-                <LucideTarget className="mr-1 h-4 w-4" />
-                GPS
+                {isLocating ? (
+                    <LucideLoader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                    <LucideTarget className="mr-1 h-4 w-4" />
+                )}
+                {isLocating ? "Aniqlanmoqda..." : "GPS"}
             </Button>
             <MapContainer
                 center={[defaultLat, defaultLng]}
-                zoom={13}
+                zoom={15}
                 scrollWheelZoom={true}
                 className="h-full w-full"
             >
