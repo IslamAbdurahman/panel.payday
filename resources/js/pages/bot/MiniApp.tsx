@@ -229,12 +229,15 @@ export default function MiniApp() {
                 const leftEye = landmarks[36];
                 const rightEye = landmarks[45];
 
-                const leftSideDist = nose.x - leftJaw.x; 
-                const rightSideDist = rightJaw.x - nose.x; 
+                // Use Euclidean distance (hypot) instead of raw X coordinates! 
+                // This makes the measurement rotation-invariant (immune to head tilting / phone tilting).
+                const leftSideDist = Math.hypot(nose.x - leftJaw.x, nose.y - leftJaw.y);
+                const rightSideDist = Math.hypot(rightJaw.x - nose.x, rightJaw.y - nose.y);
 
                 const eyeMidY = (leftEye.y + rightEye.y) / 2;
-                const topNoseDist = nose.y - eyeMidY; 
-                const bottomNoseDist = chin.y - nose.y; 
+                const eyeMidX = (leftEye.x + rightEye.x) / 2;
+                const topNoseDist = Math.hypot(nose.x - eyeMidX, nose.y - eyeMidY);
+                const bottomNoseDist = Math.hypot(chin.x - nose.x, chin.y - nose.y);
 
                 const currentAct = livenessQueue[currentActionIndex];
 
@@ -244,15 +247,15 @@ export default function MiniApp() {
 
                 if (currentAct === 'togri_qarang') {
                     // Face must be straight (distances nearly equal). 
-                    // Set to 1.25 to account for phone wide-angle distortion and facial asymmetry.
+                    // Set to 1.3 to easily pass even with mild asymmetry.
                     const maxDist = Math.max(leftSideDist, rightSideDist);
                     const minDist = Math.min(leftSideDist, rightSideDist);
-                    if (maxDist < minDist * 1.25) {
+                    if (maxDist < minDist * 1.3) {
                         actionPassed = true;
                     }
                 } else if (currentAct === 'yonroqqa_qarang') {
-                    // Face must be turned slightly left or right (diff > 1.35).
-                    if (leftSideDist > rightSideDist * 1.35 || rightSideDist > leftSideDist * 1.35) {
+                    // Face must be turned slightly left or right (diff > 1.45).
+                    if (leftSideDist > rightSideDist * 1.45 || rightSideDist > leftSideDist * 1.45) {
                         actionPassed = true;
                     }
                 }
