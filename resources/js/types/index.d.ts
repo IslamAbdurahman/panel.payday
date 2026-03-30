@@ -321,6 +321,7 @@ export interface Worker {
     phone: string;
     address: string;
     comment?: string;
+    avatar?: string;
     employeeNoString: string;
     salaries?: Salary[];
     worker_days?: WorkerDay[];

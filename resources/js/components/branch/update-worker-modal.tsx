@@ -31,7 +31,8 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
     const { t } = useTranslation();
     const nameInput = useRef<HTMLInputElement>(null);
 
-    const { data, setData, put, processing, errors, clearErrors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors } = useForm({
+        _method: 'put',
         name: worker.name || '',
         work_time: worker.work_time,
         end_time: worker.end_time,
@@ -41,11 +42,13 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
         address: worker.address || '',
         comment: worker.comment || '',
         status: worker.status,
+        avatar: null as File | null,
     });
 
     useEffect(() => {
         if (open) {
             setData({
+                _method: 'put',
                 name: worker.name || '',
                 work_time: worker.work_time,
                 end_time: worker.end_time,
@@ -55,6 +58,7 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
                 address: worker.address || '',
                 comment: worker.comment || '',
                 status: worker.status,
+                avatar: null,
             });
         }
     }, [open]);
@@ -62,7 +66,7 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        put(`/worker/${worker.id}`, {
+        post(`/worker/${worker.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success(t('updated_successfully'));
@@ -113,6 +117,12 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
                         <Label htmlFor="comment">{t('comment')}</Label>
                         <Input id="comment" value={data.comment} onChange={(e) => setData('comment', e.target.value)} />
                         <InputError message={errors.comment} />
+                    </div>
+
+                    <div>
+                        <Label htmlFor="avatar">{t('avatar')}</Label>
+                        <Input id="avatar" type="file" accept="image/*" onChange={(e) => setData('avatar', e.target.files?.[0] || null)} />
+                        <InputError message={errors.avatar as string} />
                     </div>
 
                     <div>

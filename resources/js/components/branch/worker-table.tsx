@@ -63,6 +63,7 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                     <thead className="bg-gray-100 dark:bg-gray-700">
                         <tr>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('n')}</td>
+                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('avatar')}</td>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('name')}</td>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('firm')}</td>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('phone')}</td>
@@ -86,6 +87,19 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                             return (
                                 <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{globalIndex}</td>
+                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
+                                        {item.avatar ? (
+                                            <img
+                                                src={`/storage/${item.avatar}`}
+                                                alt="Avatar"
+                                                className="h-10 w-10 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-gray-500 dark:bg-gray-700">
+                                                N/A
+                                            </div>
+                                        )}
+                                    </td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                         <Link href={`/worker/${item.id}`}>{item.name}</Link>
                                     </td>

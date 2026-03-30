@@ -103,7 +103,11 @@ class WorkerController extends Controller
     public function store(StoreWorkerRequest $request)
     {
         try {
-            Worker::create($request->validated());
+            $data = $request->validated();
+            if ($request->hasFile('avatar')) {
+                $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            }
+            Worker::create($data);
 
             return back()->with('success', 'Worker created successfully.');
         } catch (\Exception $e) {
@@ -244,7 +248,14 @@ class WorkerController extends Controller
     public function update(UpdateWorkerRequest $request, Worker $worker)
     {
         try {
-            $worker->update($request->validated());
+            $data = $request->validated();
+            if ($request->hasFile('avatar')) {
+                if ($worker->avatar && is_file(public_path('storage/' . $worker->avatar))) {
+                    unlink(public_path('storage/' . $worker->avatar));
+                }
+                $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            }
+            $worker->update($data);
             return back()->with('success', 'Worker updated successfully.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -256,7 +267,9 @@ class WorkerController extends Controller
      */
     public function destroy(Worker $worker)
     {
-
+        if ($worker->avatar && is_file(public_path('storage/' . $worker->avatar))) {
+            unlink(public_path('storage/' . $worker->avatar));
+        }
 
         $worker->delete();
 

@@ -31,6 +31,7 @@ class UpdateWorkerRequest extends FormRequest
             'address' => 'nullable',
             'comment' => 'nullable',
             'status' => 'nullable',
+            'avatar' => 'nullable|image|max:5120',
         ];
     }
 

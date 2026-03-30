@@ -32,7 +32,8 @@ class Worker extends Model
         'comment',
         'employeeNoString',
         'status',
-        'telegram_id'
+        'telegram_id',
+        'avatar'
     ];
 
     protected $with = [

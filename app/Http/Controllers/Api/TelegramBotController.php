@@ -118,7 +118,7 @@ class TelegramBotController extends Controller
             // Handle Picture Upload
             $picturePath = null;
             if ($request->hasFile('picture')) {
-                $picturePath = $request->file('picture')->store('attendance/telegram', 'public');
+                $picturePath = $request->file('picture')->store('telegram', 'public');
             }
 
             // Create Access Event

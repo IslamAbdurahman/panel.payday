@@ -27,6 +27,7 @@ type FormData = {
     phone: string;
     address: string;
     comment: string;
+    avatar: File | null;
 };
 
 export default function CreateWorkerModal({ branch }: createWorker) {
@@ -45,6 +46,7 @@ export default function CreateWorkerModal({ branch }: createWorker) {
         phone: '',
         address: '',
         comment: '',
+        avatar: null,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -101,6 +103,11 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                         <Label htmlFor="comment">{t('comment')}</Label>
                         <Input id="comment" ref={nameInput} value={data.comment} onChange={(e) => setData('comment', e.target.value)} />
                         <InputError message={errors.comment} />
+                    </div>
+                    <div>
+                        <Label htmlFor="avatar">{t('avatar')}</Label>
+                        <Input id="avatar" type="file" accept="image/*" onChange={(e) => setData('avatar', e.target.files?.[0] || null)} />
+                        <InputError message={errors.avatar as string} />
                     </div>
 
                     <div>
