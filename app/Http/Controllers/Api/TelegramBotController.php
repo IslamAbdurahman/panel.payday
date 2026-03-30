@@ -177,7 +177,7 @@ class TelegramBotController extends Controller
                 'userType' => 'normal',
                 'currentVerifyMode' => 'face',
                 'attendanceStatus' => $status,
-                'label' => $status === 'checkIn' ? 'Telegram (Keldi)' : 'Telegram (Ketdi)',
+                'label' => $status === 'checkIn' ? 'Keldi' : 'Ketdi',
                 'mask' => 'unknown',
                 'picturesNumber' => 1,
                 'purePwdVerifyEnable' => false,
