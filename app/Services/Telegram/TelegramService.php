@@ -147,14 +147,18 @@ class TelegramService
     protected function savePhoneNumber(int|string $chatId, array $contact): void
     {
         try {
-            $phone = trim($contact['phone_number'], '+');
+            // Tozalanib olamiz (faqat raqamlar)
+            $cleanPhone = preg_replace('/[^0-9]/', '', $contact['phone_number']);
+            // Masalan: "998901234567" bo'lsa, oxirgi 9 taligini ajratib olib izlash 
+            // xavfsizroq, bazada format turlicha bo'lishi ehtimoli bor.
+            $searchPhone = substr($cleanPhone, -9);
 
             $user = User::query()
-                ->where('phone', $phone)
+                ->where('phone', 'like', "%{$searchPhone}%")
                 ->first();
 
             $worker = Worker::query()
-                ->where('phone', $phone)
+                ->where('phone', 'like', "%{$searchPhone}%")
                 ->first();
 
             $removeKeyboard = Keyboard::remove(['selective' => false]);
@@ -165,7 +169,7 @@ class TelegramService
 
                 $this->sendSafeMessage(
                     $chatId,
-                    "👋 Admin Payday . Xush kelibsiz.",
+                    "👋 Admin Payday tizimiga xush kelibsiz, <b>{$user->name}</b>.",
                     $removeKeyboard
                 );
             }
@@ -175,14 +179,31 @@ class TelegramService
 
                 $this->sendSafeMessage(
                     $chatId,
-                    "👋 Foydalanuvchi Payday . Xush kelibsiz.",
+                    "✅ Telefon raqamingiz muvaffaqiyatli tasdiqlandi!\n\n👋 Xush kelibsiz, <b>{$worker->name}</b>!",
                     $removeKeyboard
+                );
+
+                $webAppKeyboard = Keyboard::make([
+                    'inline_keyboard' => [
+                        [
+                            Keyboard::inlineButton([
+                                'text' => '📱 Davomat (Mini App)',
+                                'web_app' => ['url' => secure_url('/bot/mini-app')]
+                            ])
+                        ]
+                    ]
+                ]);
+
+                $this->sendSafeMessage(
+                    $chatId,
+                    "Quyidagi tugma orqali davomat ilovasidan bemalol hisobot topshirishingiz mumkin 👇",
+                    $webAppKeyboard
                 );
             }
             else {
                 $this->sendSafeMessage(
                     $chatId,
-                    "❌ Sizning raqamingiz bazada topilmadi. Iltimos, admin bilan bog'laning.",
+                    "❌ Sizning raqamingiz ({$contact['phone_number']}) bazada topilmadi. Iltimos, admin bilan bog'laning va raqamingizni kiritishini so'rang.",
                     $removeKeyboard
                 );
             }

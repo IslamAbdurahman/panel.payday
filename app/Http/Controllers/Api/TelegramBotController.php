@@ -21,7 +21,7 @@ class TelegramBotController extends Controller
         ]);
 
         $telegram_id = $request->input('telegram_id');
-        $worker = Worker::where('telegram_id', $telegram_id)->first();
+        $worker = Worker::query()->where('telegram_id', $telegram_id)->first();
 
         if (!$worker) {
             return response()->json([
@@ -33,12 +33,12 @@ class TelegramBotController extends Controller
         // Return worker details and their current status for today
         $todayStr = Carbon::now()->toDateString();
         
-        $todayCheckIn = HikvisionAccessEvent::where('employeeNoString', $worker->employeeNoString)
+        $todayCheckIn = HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
             ->whereDate('created_at', $todayStr)
             ->where('attendanceStatus', 'checkIn')
             ->first();
             
-        $todayCheckOut = HikvisionAccessEvent::where('employeeNoString', $worker->employeeNoString)
+        $todayCheckOut = HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
             ->whereDate('created_at', $todayStr)
             ->where('attendanceStatus', 'checkOut')
             ->first();
@@ -70,7 +70,7 @@ class TelegramBotController extends Controller
         $telegram_id = $request->input('telegram_id');
         $type = $request->input('type');
 
-        $worker = Worker::where('telegram_id', $telegram_id)->first();
+        $worker = Worker::query()->where('telegram_id', $telegram_id)->first();
 
         if (!$worker) {
             return response()->json(['success' => false, 'message' => 'Xodim topilmadi'], 404);
@@ -79,7 +79,7 @@ class TelegramBotController extends Controller
         $todayStr = Carbon::now()->toDateString();
 
         // Check if already checked in/out today
-        $exists = HikvisionAccessEvent::where('employeeNoString', $worker->employeeNoString)
+        $exists = HikvisionAccessEvent::query()->where('employeeNoString', $worker->employeeNoString)
             ->whereDate('created_at', $todayStr)
             ->where('attendanceStatus', $type)
             ->exists();
