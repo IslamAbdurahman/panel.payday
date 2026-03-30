@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, MapPin, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, MapPin, CheckCircle2, XCircle, Camera } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 
 // Extend window for Telegram WebApp
@@ -15,6 +15,16 @@ declare global {
     }
 }
 
+type LivenessAction = 'chapga_qarang' | 'onga_qarang' | 'tepaga_qarang' | 'pastga_qarang';
+const LIVENESS_ACTIONS: LivenessAction[] = ['chapga_qarang', 'onga_qarang', 'tepaga_qarang', 'pastga_qarang'];
+
+const ACTION_LABELS: Record<LivenessAction, string> = {
+    chapga_qarang: "Boshingizni CHAPGA buring ⬅️",
+    onga_qarang: "Boshingizni O'NGGA buring ➡️",
+    tepaga_qarang: "Boshingizni TEPAGA ko'taring ⬆️",
+    pastga_qarang: "Boshingizni PASTGA tushiring ⬇️"
+};
+
 export default function MiniApp() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -25,10 +35,21 @@ export default function MiniApp() {
     const [pendingAction, setPendingAction] = useState<'checkIn' | 'checkOut' | null>(null);
     const [modelsLoaded, setModelsLoaded] = useState(false);
     const [aiStatusMessage, setAiStatusMessage] = useState<string>("Yuklanmoqda...");
-    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Camera & Liveness state
+    const [isCameraActive, setIsCameraActive] = useState(false);
+    const [livenessQueue, setLivenessQueue] = useState<LivenessAction[]>([]);
+    const [currentActionIndex, setCurrentActionIndex] = useState(0);
+    const [cameraFeedback, setCameraFeedback] = useState<string>("Kamera ishga tushmoqda...");
+    const [livenessPassed, setLivenessPassed] = useState(false);
+    
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const loopRef = useRef<number | null>(null);
 
     // Initialize Telegram WebApp and Auth
     useEffect(() => {
+        let isMounted = true;
         const initTelegram = () => {
             if (window.Telegram && window.Telegram.WebApp) {
                 const WebApp = window.Telegram.WebApp;
@@ -52,8 +73,7 @@ export default function MiniApp() {
                 // Authenticate with Backend
                 authenticateWorker(telegramId);
             } else {
-                // If not in Telegram, wait for the script to load and try again
-                setTimeout(initTelegram, 500);
+                if (isMounted) setTimeout(initTelegram, 500);
             }
         };
 
@@ -82,20 +102,28 @@ export default function MiniApp() {
                 setAiStatusMessage("Landmark yuklandi...");
                 await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
                 setAiStatusMessage("Tayyor!");
-                setModelsLoaded(true);
+                if (isMounted) setModelsLoaded(true);
             } catch (err: any) {
-                setAiStatusMessage("Xatolik: " + err.message);
-                console.error("Modellarni yuklashda xatolik:", err);
-                if (window.Telegram?.WebApp?.showAlert) {
-                    window.Telegram.WebApp.showAlert("AI Modellarini yuklashda xatolik: " + (err.message || String(err)));
-                } else alert("AI modellarni yuklashda xatolik yuz berdi");
-                setError("AI Modellarni yuklashda xato: " + (err.message || String(err)));
-                setLoading(false);
+                if (isMounted) {
+                    setAiStatusMessage("Xatolik: " + err.message);
+                    console.error("Modellarni yuklashda xatolik:", err);
+                    if (window.Telegram?.WebApp?.showAlert) {
+                        window.Telegram.WebApp.showAlert("AI Modellarini yuklashda xatolik: " + (err.message || String(err)));
+                    } else alert("AI modellarni yuklashda xatolik yuz berdi");
+                    setError("AI Modellarni yuklashda xato: " + (err.message || String(err)));
+                    setLoading(false);
+                }
             }
         };
 
         loadModels();
-
+        
+        return () => {
+            isMounted = false;
+            if (loopRef.current) cancelAnimationFrame(loopRef.current);
+            stopCamera();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const authenticateWorker = async (telegramId: number) => {
@@ -118,13 +146,25 @@ export default function MiniApp() {
         }
     };
 
-    const triggerAction = (type: 'checkIn' | 'checkOut') => {
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(t => t.stop());
+            videoRef.current.srcObject = null;
+        }
+        setIsCameraActive(false);
+        if (loopRef.current) {
+            cancelAnimationFrame(loopRef.current);
+            loopRef.current = null;
+        }
+    };
+
+    const triggerAction = async (type: 'checkIn' | 'checkOut') => {
         if (!location) {
             if (window.Telegram?.WebApp?.showAlert) {
                 window.Telegram.WebApp.showAlert("Iltimos, avvalo qurilmangizdan joylashuv (GPS) aniqlanishiga ruxsat bering! Busiz davomat olinmaydi.");
             } else alert("Joylashuv (GPS) aniqlanmadi.");
             
-            // Try fetching again
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -135,97 +175,204 @@ export default function MiniApp() {
             return;
         }
 
-        setPendingAction(type);
-        if (fileInputRef.current) {
-            fileInputRef.current.click();
+        if (!modelsLoaded) {
+            if (window.Telegram?.WebApp?.showAlert) {
+                window.Telegram.WebApp.showAlert("AI Yuzni tekshirish tizimi ishga tushmoqda, iltimos ozgina kutib, qayta urinib ko'ring.");
+            } else alert("Tizim ishga tushmoqda, biroz kuting.");
+            return;
         }
+
+        if (!worker?.avatar) {
+            if (window.Telegram?.WebApp?.showAlert) {
+                window.Telegram.WebApp.showAlert("Tizimda profil rasmingiz kiritilmagan. Davomat yuz aniqlash funksiyasisiz olinadi. Biroq kameraga qarab turing.");
+            }
+            // Proceed even without avatar, but liveness must still pass.
+            // If they don't have avatar, we can skip liveness? User requirement implies liveness for ALL, but let's check liveness regardless.
+        }
+
+        setPendingAction(type);
+        setLivenessPassed(false);
+        setCameraFeedback("Kameraga qarab turing...");
+        
+        // Randomly pick 2 liveness actions
+        const shuffled = [...LIVENESS_ACTIONS].sort(() => 0.5 - Math.random());
+        const queue = [shuffled[0], shuffled[1]];
+        setLivenessQueue(queue);
+        setCurrentActionIndex(0);
+        
+        setIsCameraActive(true);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+            });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err: any) {
+            console.error(err);
+            if (window.Telegram?.WebApp?.showAlert) {
+                window.Telegram.WebApp.showAlert("Kamerani ochishda xatolik yuz berdi. Ruxsatlarni tekshiring.");
+            }
+            setIsCameraActive(false);
+            setPendingAction(null);
+        }
+    };
+
+    const processLiveness = async () => {
+        if (!videoRef.current || videoRef.current.paused || videoRef.current.ended || livenessPassed) return;
+
+        try {
+            const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+            
+            if (detection) {
+                const landmarks = detection.landmarks.positions;
+                const nose = landmarks[30];
+                const leftJaw = landmarks[0];
+                const rightJaw = landmarks[16];
+                const chin = landmarks[8];
+                const leftEye = landmarks[36];
+                const rightEye = landmarks[45];
+
+                const leftSideDist = nose.x - leftJaw.x; 
+                const rightSideDist = rightJaw.x - nose.x; 
+
+                const eyeMidY = (leftEye.y + rightEye.y) / 2;
+                const topNoseDist = nose.y - eyeMidY; 
+                const bottomNoseDist = chin.y - nose.y; 
+
+                const currentAct = livenessQueue[currentActionIndex];
+
+                setCameraFeedback(ACTION_LABELS[currentAct]);
+
+                let actionPassed = false;
+                // Since WebRTC frames are unmirrored, when User turns THEIR Right, nose goes toward Left side (0). Thus rightSideDist > leftSideDist.
+                if (currentAct === 'onga_qarang' && rightSideDist > leftSideDist * 1.5) actionPassed = true;
+                if (currentAct === 'chapga_qarang' && leftSideDist > rightSideDist * 1.5) actionPassed = true;
+                if (currentAct === 'tepaga_qarang' && bottomNoseDist > topNoseDist * 1.4) actionPassed = true;
+                if (currentAct === 'pastga_qarang' && topNoseDist > bottomNoseDist * 1.4) actionPassed = true;
+
+                if (actionPassed) {
+                    if (currentActionIndex + 1 < livenessQueue.length) {
+                        // Play a little success tone if possible, then switch action
+                        setCurrentActionIndex(curr => curr + 1);
+                    } else {
+                        // All actions complete!
+                        setLivenessPassed(true);
+                        setCameraFeedback("Ajoyib! Yuz mosligi tekshirilmoqda...");
+                        await captureAndVerify();
+                        return; // Stop the loop entirely
+                    }
+                }
+            } else {
+                setCameraFeedback("Yuzingizni kameraga to'g'rilang kadrda to'liq ko'rinsin!");
+            }
+        } catch (e) {
+            console.error("Liveness exception", e);
+        }
+
+        if (isCameraActive && !livenessPassed) {
+            // Processing delay to avoid heavy CPU block on mobile
+            setTimeout(() => {
+                loopRef.current = requestAnimationFrame(processLiveness);
+            }, 200);
+        }
+    };
+
+    // Trigger processLiveness when video actually starts playing
+    const handleVideoPlay = () => {
+        loopRef.current = requestAnimationFrame(processLiveness);
+    };
+
+    const captureAndVerify = async () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        
+        // Draw to canvas
+        const videoEl = videoRef.current;
+        const canvasEl = canvasRef.current;
+        canvasEl.width = videoEl.videoWidth;
+        canvasEl.height = videoEl.videoHeight;
+        const ctx = canvasEl.getContext('2d');
+        if (ctx) {
+            // We DONT explicitly flip the canvas, we just draw the raw frame.
+            ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+        }
+        
+        // Convert to blob
+        const blob = await new Promise<Blob | null>(resolve => canvasEl.toBlob(resolve, 'image/jpeg', 0.9));
+        if (!blob) {
+            alert("Rasm olishda xatolik yuz berdi.");
+            stopCamera();
+            setPendingAction(null);
+            return;
+        }
+        const file = new File([blob], "snapshot.jpg", { type: "image/jpeg" });
+
+        // Optionally Stop video visually early to show it's "frozen"
+        videoEl.pause();
+
+        // Face recognition verify
+        if (worker?.avatar) {
+            const isMatch = await verifyFace(file, worker.avatar);
+            if (!isMatch) {
+                stopCamera();
+                setPendingAction(null);
+                return;
+            }
+        }
+        
+        // Force unmount camera and Upload
+        stopCamera();
+        await submitAttendance(file);
     };
 
     const verifyFace = async (file: File, avatarUrl: string): Promise<boolean> => {
         try {
-            // Load the snapshot as an HTML image
             const snapshotImg = await faceapi.bufferToImage(file);
-            
-            // Generate descriptor for the snapshot
             const snapshotDetection = await faceapi.detectSingleFace(snapshotImg, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+            
             if (!snapshotDetection) {
                 if (window.Telegram?.WebApp?.showAlert) {
-                    window.Telegram.WebApp.showAlert("Rasmdan yuzni aniqlab bo'lmadi! Iltimos, yuzingizni yorug'roq joyda kameraga to'g'irlab qayta urinib ko'ring.");
+                    window.Telegram.WebApp.showAlert("Olingan kadrda yuzingizni aniqlab bo'lmadi! Iltimos qayta urinib ko'ring.");
                 } else alert("Yuz aniqlanmadi.");
                 return false;
             }
 
-            // Load the avatar image
             const avatarImg = await faceapi.fetchImage(`/storage/${avatarUrl}`);
             const avatarDetection = await faceapi.detectSingleFace(avatarImg, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
 
             if (!avatarDetection) {
                 if (window.Telegram?.WebApp?.showAlert) {
-                    window.Telegram.WebApp.showAlert("Bazadagi profil rasmingizdan yuz aniqlanmadi. Adminstratorga murojaat qiling.");
+                    window.Telegram.WebApp.showAlert("Tizimdagi profilingizdagi rasmdan yuz aniqlanmadi! Adminstratorga o'z ishingiz rasmizni sifatli qilib o'zgartirishni so'rang.");
                 } else alert("Bazadagi rasm yaroqsiz.");
                 return false;
             }
 
-            // Compare
             const distance = faceapi.euclideanDistance(snapshotDetection.descriptor, avatarDetection.descriptor);
             console.log("Face distance", distance);
             
-            // Standard distance threshold for face recognition is 0.6
             if (distance < 0.6) {
                 return true;
             } else {
                 if (window.Telegram?.WebApp?.showAlert) {
-                    window.Telegram.WebApp.showAlert("Kechirasiz, yuzingiz tizimdagi profil rasmingizga (avatarga) mos kelmadi!");
+                    window.Telegram.WebApp.showAlert("Kechirasiz, yuzingiz tizimdagi reytingizdagi rasmga (avatar) mos kelmadi!");
                 } else alert("Yuzingiz mos kelmadi.");
                 return false;
             }
-
         } catch (error) {
             console.error(error);
             if (window.Telegram?.WebApp?.showAlert) {
-                window.Telegram.WebApp.showAlert("Yuzni solishtirishda kutilmagan xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
+                window.Telegram.WebApp.showAlert("Yuzni solishtirishda tizimli xatolik yuz berdi.");
             }
             return false;
         }
     };
 
-    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !pendingAction || !worker?.telegram_id) {
-            setPendingAction(null);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-            return;
-        }
-        
+    const submitAttendance = async (file: File) => {
         setActionLoading(true);
-
-        if (worker?.avatar && modelsLoaded) {
-            const isMatch = await verifyFace(file, worker.avatar);
-            if (!isMatch) {
-                setActionLoading(false);
-                setPendingAction(null);
-                if (fileInputRef.current) fileInputRef.current.value = '';
-                return;
-            }
-        } else if (!worker?.avatar) {
-            if (window.Telegram?.WebApp?.showAlert) {
-                window.Telegram.WebApp.showAlert("Tizimda profil rasmingiz kiritilmagan. Davomat yuz aniqlash funksiyasisiz olinadi.");
-            }
-        } else if (!modelsLoaded) {
-            console.warn("Yuzni tanish modellari hali yuklanmagan...");
-            if (window.Telegram?.WebApp?.showAlert) {
-                window.Telegram.WebApp.showAlert("AI Yuzni tekshirish tizimi ishga tushmoqda, iltimos 2-3 soniya kutib, qayta urinib ko'ring.");
-            } else alert("Tizim ishga tushmoqda, biroz kuting.");
-            setActionLoading(false);
-            setPendingAction(null);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-            return;
-        }
-
         try {
             const formData = new FormData();
             formData.append('telegram_id', worker.telegram_id.toString());
-            formData.append('type', pendingAction);
+            if (pendingAction) formData.append('type', pendingAction);
             formData.append('picture', file);
             
             if (location) {
@@ -260,7 +407,6 @@ export default function MiniApp() {
         } finally {
             setActionLoading(false);
             setPendingAction(null);
-            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -296,14 +442,60 @@ export default function MiniApp() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-50 p-4 dark:bg-zinc-950 font-sans">
+        <div className="min-h-screen bg-zinc-50 p-4 dark:bg-zinc-950 font-sans relative">
             <Head>
                 <script src="https://telegram.org/js/telegram-web-app.js"></script>
                 <title>Davomat | Mini App</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
             </Head>
 
-            <div className="mx-auto max-w-md space-y-6 pt-4">
+            {/* Camera Overlay */}
+            {isCameraActive && (
+                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/90 backdrop-blur-sm p-4">
+                    <div className="relative w-full max-w-md bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-zinc-800">
+                        
+                        <div className="py-3 bg-zinc-900 border-b border-zinc-800 px-4 flex justify-between items-center text-white">
+                            <span className="font-semibold text-sm flex items-center gap-2">
+                                <Camera className="w-4 h-4 text-blue-400" /> 
+                                Tiriklikni Tekshirish
+                            </span>
+                            <button onClick={stopCamera} className="text-zinc-400 p-1 bg-zinc-800 rounded-full hover:bg-zinc-700 hover:text-white transition-colors">
+                                <XCircle className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="relative w-full bg-black flex items-center justify-center object-cover overflow-hidden" style={{ aspectRatio: '3/4' }}>
+                            <video 
+                                ref={videoRef}
+                                onPlay={handleVideoPlay}
+                                autoPlay 
+                                playsInline 
+                                muted 
+                                className="w-full h-full object-cover transform -scale-x-100" 
+                            />
+                            
+                            {/* Overlay UI */}
+                            <div className="absolute top-4 left-0 right-0 px-4 flex justify-center">
+                                <div className="bg-black/70 rounded-full py-2 px-6 backdrop-blur-md border border-white/10 text-center flex flex-col items-center shadow-lg">
+                                    <h3 className="text-white font-bold text-lg">
+                                        {cameraFeedback}
+                                    </h3>
+                                    {livenessQueue.length > 0 && !livenessPassed && (
+                                        <p className="text-blue-300 font-medium text-xs mt-1 bg-blue-500/20 px-2 py-0.5 rounded-full">
+                                            {currentActionIndex + 1}/{livenessQueue.length} topshiriq bajarilmoqda
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <canvas ref={canvasRef} className="hidden" />
+                        </div>
+                        
+                    </div>
+                </div>
+            )}
+
+            <div className={`mx-auto max-w-md space-y-6 pt-4 transition-opacity duration-300 ${isCameraActive ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
                 {/* Header Information */}
                 <Card className="border-none shadow-sm bg-white dark:bg-zinc-900">
                     <CardHeader className="pb-4">
@@ -327,7 +519,7 @@ export default function MiniApp() {
 
                 {/* Actions */}
                 <div className="grid gap-4">
-                    <Card className={`border-2 ${status?.has_checked_in ? 'border-green-100 bg-green-50/50 dark:border-green-900/30 dark:bg-green-900/10' : 'shadow-sm'}`}>
+                    <Card className={`border-2 transition-all ${status?.has_checked_in ? 'border-green-100 bg-green-50/50 dark:border-green-900/30 dark:bg-green-900/10' : 'shadow-sm'}`}>
                         <CardContent className="flex flex-col items-center justify-center py-8">
                             {status?.has_checked_in ? (
                                 <div className="text-center space-y-2">
@@ -338,7 +530,7 @@ export default function MiniApp() {
                             ) : (
                                 <Button 
                                     size="lg" 
-                                    className="w-full h-16 text-lg rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white"
+                                    className="w-full h-16 text-lg rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white transition-all transform active:scale-95"
                                     disabled={actionLoading}
                                     onClick={() => triggerAction('checkIn')}
                                 >
@@ -348,7 +540,7 @@ export default function MiniApp() {
                         </CardContent>
                     </Card>
 
-                    <Card className={`border-2 ${status?.has_checked_out ? 'border-orange-100 bg-orange-50/50 dark:border-orange-900/30 dark:bg-orange-900/10' : 'shadow-sm'}`}>
+                    <Card className={`border-2 transition-all ${status?.has_checked_out ? 'border-orange-100 bg-orange-50/50 dark:border-orange-900/30 dark:bg-orange-900/10' : 'shadow-sm'}`}>
                         <CardContent className="flex flex-col items-center justify-center py-8">
                             {status?.has_checked_out ? (
                                 <div className="text-center space-y-2">
@@ -360,7 +552,7 @@ export default function MiniApp() {
                                 <Button 
                                     size="lg" 
                                     variant="outline"
-                                    className="w-full h-16 text-lg rounded-xl shadow-sm border-zinc-200"
+                                    className="w-full h-16 text-lg rounded-xl shadow-sm border-zinc-200 transition-all transform active:scale-95"
                                     disabled={actionLoading || !status?.has_checked_in}
                                     onClick={() => triggerAction('checkOut')}
                                 >
@@ -368,14 +560,6 @@ export default function MiniApp() {
                                 </Button>
                             )}
                             
-                            <input
-                                type="file"
-                                accept="image/*"
-                                capture="user"
-                                className="hidden"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                            />
                             {(!status?.has_checked_in && !status?.has_checked_out) && (
                                 <p className="mt-4 text-xs text-center text-zinc-400">
                                     Siz hali ishga kelganingizni belgilamadingiz. Ruxsat yo'q.
