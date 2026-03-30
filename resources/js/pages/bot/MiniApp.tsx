@@ -73,15 +73,20 @@ export default function MiniApp() {
 
         const loadModels = async () => {
             try {
-                const MODEL_URL = '/models';
+                const MODEL_URL = window.location.origin + '/models';
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
                 setModelsLoaded(true);
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Modellarni yuklashda xatolik:", err);
+                if (window.Telegram?.WebApp?.showAlert) {
+                    window.Telegram.WebApp.showAlert("AI Modellarini yuklashda xatolik: " + (err.message || "404 Not Found"));
+                } else alert("AI modellarni yuklashda xatolik yuz berdi");
+                setError("AI Modellarni yuklashda xato: " + (err.message || ""));
+                setLoading(false);
             }
         };
 
