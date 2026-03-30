@@ -82,7 +82,7 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="max-w-17xl dark:border-gray-400">
+            <DialogContent className="max-w-[95%] w-full dark:border-gray-400">
                 <DialogDescription>
                     <DialogTitle>{t('modal.update_title')}</DialogTitle>
                     <DialogDescription>{t('modal.update_description')}</DialogDescription>
@@ -203,12 +203,12 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
                                     </div>
                                 </div>
                                 <div className="overflow-hidden rounded-md border shadow-sm">
-                                    <LocationPicker 
-                                        latitude={data.latitude} 
-                                        longitude={data.longitude} 
+                                    <LocationPicker
+                                        latitude={data.latitude}
+                                        longitude={data.longitude}
                                         onChange={(lat, lng) => {
                                             setData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
-                                        }} 
+                                        }}
                                     />
                                 </div>
                             </div>
