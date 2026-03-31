@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->double('hour_price')->default(0);
             $table->double('fine_price')->default(0);
             $table->string('name');
-            $table->string('phone')->nullable();
+            $table->string('phone')->unique()->nullable();
             $table->string('address')->nullable();
             $table->string('comment')->nullable();
             $table->string('employeeNoString')->unique()->nullable();

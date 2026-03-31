@@ -27,7 +27,7 @@ class UpdateWorkerRequest extends FormRequest
             'hour_price' => 'numeric|min:0',
             'fine_price' => 'numeric|min:0',
             'name' => 'required',
-            'phone' => 'nullable',
+            'phone' => ['nullable', 'string', \Illuminate\Validation\Rule::unique('workers', 'phone')->ignore($this->route('worker'))],
             'address' => 'nullable',
             'comment' => 'nullable',
             'status' => 'nullable',
@@ -41,6 +41,7 @@ class UpdateWorkerRequest extends FormRequest
             'name.required' => 'The name field is required.',
             'work_time.required' => 'The work time field is required.',
             'end_time.required' => 'The end time field is required.',
+            'phone.unique' => 'This phone number has already been taken.',
         ];
     }
 
