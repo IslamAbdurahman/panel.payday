@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import CreateWorkerModal from '@/components/branch/create-worker-modal';
 import UpdateWorkerModal from '@/components/branch/update-worker-modal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 
 type WorkerTableProps = {
@@ -24,6 +25,7 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
     const [open, setOpen] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+    const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
     const handleUpdateClick = (worker: Worker) => {
         setSelectedWorker(worker);
@@ -86,7 +88,8 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                                             <img
                                                 src={`/storage/${item.avatar}`}
                                                 alt="Avatar"
-                                                className="h-10 w-10 rounded-full object-cover"
+                                                className="h-10 w-10 rounded-full object-cover cursor-zoom-in transition-transform hover:scale-110"
+                                                onClick={() => setZoomedImage(`/storage/${item.avatar}`)}
                                             />
                                         ) : (
                                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-gray-500 dark:bg-gray-700">
@@ -183,6 +186,24 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                             onDelete={handleDelete} // Handle deletion
                         />
                     )}
+
+                    {/* Lightbox for Zoomed Image */}
+                    <Dialog open={!!zoomedImage} onOpenChange={(open) => !open && setZoomedImage(null)}>
+                        <DialogContent className="sm:max-w-3xl p-1 bg-transparent border-none shadow-none overflow-hidden">
+                            <DialogHeader className="sr-only">
+                                <DialogTitle>{t('avatar')}</DialogTitle>
+                            </DialogHeader>
+                            <div className="flex items-center justify-center w-full h-full p-4">
+                                {zoomedImage && (
+                                    <img
+                                        src={zoomedImage}
+                                        alt="Zoomed Avatar"
+                                        className="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain animate-in zoom-in-95 duration-200"
+                                    />
+                                )}
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                 </table>
 
                 {/* Pagination */}
