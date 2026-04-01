@@ -110,7 +110,7 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                                     </td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                         <div className="whitespace-nowrap font-medium text-gray-700 dark:text-gray-300">
-                                            {item.work_time} - {item.end_time}
+                                            {item.work_time?.slice(0, 5)} - {item.end_time?.slice(0, 5)}
                                         </div>
                                     </td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
