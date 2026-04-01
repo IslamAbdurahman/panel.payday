@@ -254,6 +254,8 @@ class WorkerController extends Controller
                     unlink(public_path('storage/' . $worker->avatar));
                 }
                 $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            } else {
+                unset($data['avatar']);
             }
             $worker->update($data);
             return back()->with('success', 'Worker updated successfully.');
