@@ -13,7 +13,7 @@ class BranchObserver
     public function creating(Branch $branch): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             Auth::user()->user_firms()
                 ->where('firm_id', $branch->firm_id)
                 ->firstOrFail(); // Throws if unauthorized
@@ -26,7 +26,7 @@ class BranchObserver
     public function updating(Branch $branch): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             Auth::user()->user_firms()
                 ->where('firm_id', $branch->firm_id)
                 ->firstOrFail(); // Throws if unauthorized
@@ -39,7 +39,7 @@ class BranchObserver
     public function deleting(Branch $branch): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             Auth::user()->user_firms()
                 ->where('firm_id', $branch->firm_id)
                 ->firstOrFail(); // Throws if unauthorized

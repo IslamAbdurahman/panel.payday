@@ -12,7 +12,7 @@ class FirmObserver
      */
     public function creating(Firm $firm): void
     {
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             throw new \Exception('You are not allowed to access this page');
         }
     }
@@ -22,7 +22,7 @@ class FirmObserver
      */
     public function updating(Firm $firm): void
     {
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             throw new \Exception('You are not allowed to access this page');
         }
     }
@@ -32,7 +32,7 @@ class FirmObserver
      */
     public function deleting(Firm $firm): void
     {
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             throw new \Exception('You are not allowed to access this page');
         }
 

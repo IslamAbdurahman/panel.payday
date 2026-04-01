@@ -13,13 +13,15 @@ class WorkerHolidayObserver
     public function creating(WorkerHoliday $workerHoliday): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             Auth::user()->user_firms()
                 ->where('firm_id', $workerHoliday->worker->branch->firm_id)
                 ->firstOrFail(); // Throws if unauthorized
         }
 
-        $workerHoliday->user_id = Auth::user()->id;
+        if (Auth::check()) {
+            $workerHoliday->user_id = Auth::user()->id;
+        }
     }
 
     /**
@@ -36,7 +38,7 @@ class WorkerHolidayObserver
     public function deleting(WorkerHoliday $workerHoliday): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             Auth::user()->user_firms()
                 ->where('firm_id', $workerHoliday->worker->branch->firm_id)
                 ->firstOrFail(); // Throws if unauthorized

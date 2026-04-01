@@ -15,7 +15,7 @@ class WorkerObserver
     public function creating(Worker $worker): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             Auth::user()->user_firms()
                 ->where('firm_id', $worker->branch->firm_id)
                 ->firstOrFail(); // Throws if unauthorized
@@ -36,7 +36,7 @@ class WorkerObserver
     public function updating(Worker $worker): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             Auth::user()->user_firms()
                 ->where('firm_id', $worker->branch->firm_id)
                 ->firstOrFail(); // Throws if unauthorized
@@ -49,7 +49,7 @@ class WorkerObserver
     public function deleting(Worker $worker): void
     {
         // 1️⃣ Authorization FIRST
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             Auth::user()->user_firms()
                 ->where('firm_id', $worker->branch->firm_id)
                 ->firstOrFail();
