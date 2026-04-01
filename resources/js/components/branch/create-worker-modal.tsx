@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Branch } from '@/types';
@@ -32,16 +32,15 @@ type FormData = {
 
 export default function CreateWorkerModal({ branch }: createWorker) {
     const { t } = useTranslation();
+    const [open, setOpen] = useState(false);
     const nameInput = useRef<HTMLInputElement>(null);
 
-    const [open, setOpen] = useState(false);
-
-    const { data, setData, post, processing, reset, errors, clearErrors } = useForm<FormData>({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm<FormData>({
         branch_id: branch.id,
-        work_time: branch.work_time,
-        end_time: branch.end_time,
-        hour_price: branch.hour_price,
-        fine_price: branch.fine_price,
+        work_time: '09:00',
+        end_time: '18:00',
+        hour_price: 0,
+        fine_price: 0,
         name: '',
         phone: '',
         address: '',
@@ -56,15 +55,14 @@ export default function CreateWorkerModal({ branch }: createWorker) {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success(t('created_successfully'));
+                setOpen(false);
                 reset();
                 clearErrors();
-                setOpen(false);
             },
             onError: (err) => {
                 nameInput.current?.focus();
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('create_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
+                const errorMessage = err?.error || t('create_failed');
+                toast.error(errorMessage);
             },
         });
     };
@@ -72,103 +70,105 @@ export default function CreateWorkerModal({ branch }: createWorker) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className={'bg-blue-600 px-1 py-1 text-sm font-medium text-white dark:bg-blue-600'}>
-                    <IoCreate />
+                <Button className="h-8 gap-1 bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700">
+                    <IoCreate className="h-4 w-4" />
+                    {t('modal.create_title')}
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="dark:border-gray-400">
-                <DialogDescription>
+            <DialogContent className="max-w-2xl dark:border-gray-400">
+                <DialogHeader>
                     <DialogTitle>{t('modal.create_title')}</DialogTitle>
                     <DialogDescription>{t('modal.create_description')}</DialogDescription>
-                </DialogDescription>
+                </DialogHeader>
 
-                <form onSubmit={submit} className="space-y-4">
-                    <div>
-                        <Label htmlFor="name">{t('name')}</Label>
-                        <Input id="name" ref={nameInput} value={data.name} onChange={(e) => setData('name', e.target.value)} />
-                        <InputError message={errors.name} />
-                    </div>
-                    <div>
-                        <Label htmlFor="phone">{t('phone')}</Label>
-                        <Input id="phone" ref={nameInput} value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
-                        <InputError message={errors.phone} />
-                    </div>
-                    <div>
-                        <Label htmlFor="address">{t('address')}</Label>
-                        <Input id="address" ref={nameInput} value={data.address} onChange={(e) => setData('address', e.target.value)} />
-                        <InputError message={errors.address} />
-                    </div>
-                    <div>
-                        <Label htmlFor="comment">{t('comment')}</Label>
-                        <Input id="comment" ref={nameInput} value={data.comment} onChange={(e) => setData('comment', e.target.value)} />
-                        <InputError message={errors.comment} />
-                    </div>
-                    <div>
-                        <Label htmlFor="avatar">{t('avatar')}</Label>
-                        <Input id="avatar" type="file" accept="image/*" onChange={(e) => setData('avatar', e.target.files?.[0] || null)} />
-                        <InputError message={errors.avatar as string} />
-                    </div>
+                <form onSubmit={submit}>
+                    <div className="max-h-[65vh] overflow-y-auto px-1 pr-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">{t('name')}</Label>
+                                <Input id="name" ref={nameInput} value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                                <InputError message={errors.name} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">{t('phone')}</Label>
+                                <Input id="phone" value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
+                                <InputError message={errors.phone} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="address">{t('address')}</Label>
+                                <Input id="address" value={data.address} onChange={(e) => setData('address', e.target.value)} />
+                                <InputError message={errors.address} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="comment">{t('comment')}</Label>
+                                <Input id="comment" value={data.comment} onChange={(e) => setData('comment', e.target.value)} />
+                                <InputError message={errors.comment} />
+                            </div>
+                            
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="avatar">{t('avatar')}</Label>
+                                <Input id="avatar" type="file" accept="image/*" onChange={(e) => setData('avatar', e.target.files?.[0] || null)} />
+                                <InputError message={errors.avatar as string} />
+                            </div>
 
-                    <div>
-                        <Label htmlFor="work_time" className="mb-2 block">
-                            {t('work_time')}
-                        </Label>
-                        <div>
-                            <TimePicker
-                                id="work_time"
-                                value={data.work_time}
-                                onChange={(time) => setData('work_time', time ?? '')}
-                                format="HH:mm"
-                                locale="sv-sv"
-                                disableClock={true}
-                                className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
-                            />
+                            <div className="space-y-2">
+                                <Label htmlFor="work_time" className="block text-sm font-medium">
+                                    {t('work_time')}
+                                </Label>
+                                <TimePicker
+                                    id="work_time"
+                                    value={data.work_time}
+                                    onChange={(time) => setData('work_time', time ?? '')}
+                                    format="HH:mm"
+                                    locale="sv-sv"
+                                    disableClock={true}
+                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:text-white"
+                                />
+                                <InputError message={errors.work_time} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="end_time" className="block text-sm font-medium">
+                                    {t('end_time')}
+                                </Label>
+                                <TimePicker
+                                    id="end_time"
+                                    value={data.end_time}
+                                    onChange={(time) => setData('end_time', time ?? '')}
+                                    format="HH:mm"
+                                    locale="sv-sv"
+                                    disableClock={true}
+                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:text-white"
+                                />
+                                <InputError message={errors.end_time} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="hour_price">{t('hour_price')}</Label>
+                                <Input
+                                    id="hour_price"
+                                    type="number"
+                                    value={data.hour_price}
+                                    onChange={(e) => setData('hour_price', Number(e.target.value))}
+                                />
+                                <InputError message={errors.hour_price} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="fine_price">{t('fine_price')}</Label>
+                                <Input
+                                    id="fine_price"
+                                    type="number"
+                                    value={data.fine_price}
+                                    onChange={(e) => setData('fine_price', Number(e.target.value))}
+                                />
+                                <InputError message={errors.fine_price} />
+                            </div>
                         </div>
-                        <InputError message={errors.work_time} />
                     </div>
 
-                    <div>
-                        <Label htmlFor="end_time" className="mb-2 block">
-                            {t('end_time')}
-                        </Label>
-                        <div>
-                            <TimePicker
-                                id="end_time"
-                                value={data.end_time}
-                                onChange={(time) => setData('end_time', time ?? '')}
-                                format="HH:mm"
-                                locale="sv-sv"
-                                disableClock={true}
-                                className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
-                            />
-                        </div>
-                        <InputError message={errors.end_time} />
-                    </div>
-
-                    <div>
-                        <Label htmlFor="hour_price">{t('hour_price')}</Label>
-                        <Input
-                            id="hour_price"
-                            type="number"
-                            value={data.hour_price}
-                            onChange={(e) => setData('hour_price', Number(e.target.value))}
-                        />
-                        <InputError message={errors.hour_price} />
-                    </div>
-
-                    <div>
-                        <Label htmlFor="fine_price">{t('fine_price')}</Label>
-                        <Input
-                            id="fine_price"
-                            type="number"
-                            value={data.fine_price}
-                            onChange={(e) => setData('fine_price', Number(e.target.value))}
-                        />
-                        <InputError message={errors.fine_price} />
-                    </div>
-
-                    <DialogFooter className="gap-2">
+                    <DialogFooter className="mt-6 gap-2 border-t pt-4">
                         <DialogClose asChild>
                             <Button
                                 variant="secondary"
@@ -182,7 +182,7 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                             </Button>
                         </DialogClose>
 
-                        <Button type="submit" disabled={processing}>
+                        <Button type="submit" disabled={processing} className="bg-blue-600 hover:bg-blue-700">
                             {t('save')}
                         </Button>
                     </DialogFooter>

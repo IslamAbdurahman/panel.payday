@@ -65,18 +65,11 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                         <tr>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('n')}</td>
                             <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('avatar')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('name')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('firm')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('phone')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('address')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('comment')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('employeeNoString')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('work_time')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('end_time')}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('hour_price')}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('fine_price')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('status')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('balance')}</td>
+                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('worker')} / {t('employeeNoString')}</td>
+                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('phone')} / {t('address')}</td>
+                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('work_time')} - {t('end_time')}</td>
+                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('hour_price')} / {t('fine_price')}</td>
+                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('status')} / {t('balance')}</td>
                             <th className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                 {branch && <CreateWorkerModal branch={branch} />}
                             </th>
@@ -102,50 +95,72 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                                         )}
                                     </td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                        <Link href={`/worker/${item.id}`}>{item.name}</Link>
+                                        <div className="font-semibold text-blue-600 dark:text-blue-400">
+                                            <Link href={`/worker/${item.id}`}>{item.name}</Link>
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                            ID: {item.employeeNoString}
+                                        </div>
                                     </td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                        {item.branch?.firm?.name} ( {item.branch?.name} )
+                                        <div className="font-medium">{item.phone}</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]" title={item.address}>
+                                            {item.address}
+                                        </div>
                                     </td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.phone}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.address}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.comment}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.employeeNoString}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.work_time}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.end_time}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.hour_price}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.fine_price}</td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                        {item.status == 1 ? <CheckCircle /> : <MinusCircle />}
+                                        <div className="whitespace-nowrap font-medium text-gray-700 dark:text-gray-300">
+                                            {item.work_time} - {item.end_time}
+                                        </div>
                                     </td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.balance}</td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                        <div className="inline-flex shadow-sm">
+                                        <div className="text-xs">
+                                            <span className="text-green-600 dark:text-green-400 font-semibold">{Number(item.hour_price).toLocaleString()}</span>
+                                            <span className="mx-1 text-gray-400">/</span>
+                                            <span className="text-red-600 dark:text-red-400 font-semibold">{Number(item.fine_price).toLocaleString()}</span>
+                                        </div>
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600 text-center">
+                                        <div className="flex flex-col items-center gap-1">
+                                            {item.status == 1 ? (
+                                                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                                    <CheckCircle className="mr-1 h-3 w-3" /> Faol
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                                    <MinusCircle className="mr-1 h-3 w-3" /> No-faol
+                                                </span>
+                                            )}
+                                            <div className={`text-xs font-bold ${Number(item.balance) < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                                {Number(item.balance).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
+                                        <div className="flex justify-center shadow-sm">
                                             <Button
-                                                variant="secondary"
+                                                variant="outline"
                                                 size="sm"
                                                 asChild
-                                                className="rounded-none rounded-l-md"
+                                                className="h-8 w-8 p-0 rounded-r-none"
                                             >
                                                 <Link href={`/worker/show_history/${item.id}`}>
                                                     <EyeIcon className="h-4 w-4" />
                                                 </Link>
                                             </Button>
-
                                             <Button
-                                                variant="warning"
+                                                variant="outline"
                                                 size="sm"
                                                 onClick={() => handleUpdateClick(item)}
-                                                className="rounded-none border-x-0"
+                                                className="h-8 w-8 p-0 rounded-none border-x-0"
                                             >
                                                 <PencilIcon className="h-4 w-4" />
                                             </Button>
-
                                             <Button
-                                                variant="destructive"
+                                                variant="outline"
                                                 size="sm"
                                                 onClick={() => handleDeleteClick(item)}
-                                                className="rounded-none rounded-r-md"
+                                                className="h-8 w-8 p-0 rounded-l-none text-red-500 hover:text-red-600"
                                             >
                                                 <TrashIcon className="h-4 w-4" />
                                             </Button>
