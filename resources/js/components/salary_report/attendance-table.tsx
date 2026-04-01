@@ -41,9 +41,9 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                             {item.firm} ( {item.branch} )
                                         </td>
-                                        <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.work_time}</td>
-                                        <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.from}</td>
-                                        <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.to}</td>
+                                        <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.work_time?.slice(0, 5)}</td>
+                                        <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.from?.slice(0, 16)}</td>
+                                        <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.to?.slice(0, 16)}</td>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.worked_minutes}</td>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.break_minutes}</td>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600 text-red-600 font-medium">{item.late_minutes}</td>

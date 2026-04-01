@@ -90,8 +90,8 @@ const BranchTable = ({ firm }: BranchTableProps) => {
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.address}</td>
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.telegram_group_id}</td>
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.comment}</td>
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.work_time}</td>
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.end_time}</td>
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.work_time?.slice(0, 5)}</td>
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.end_time?.slice(0, 5)}</td>
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hour_price}</td>
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.fine_price}</td>
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item?.workers_count}</td>

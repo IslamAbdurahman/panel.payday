@@ -100,10 +100,10 @@ const WorkerMonthlyAttendanceTable = ({ worker, searchData }: WorkerTableProps) 
                 item.name,
                 `${item.branch?.firm?.name} ( ${item.branch?.name} )`,
                 item.phone,
-                `${~~(item.late_minutes! / 60)}:${item.late_minutes! % 60}`,
-                `${~~(item.break_minutes! / 60)}:${item.break_minutes! % 60}`,
-                `${~~(item.worked_minutes! / 60)}:${item.worked_minutes! % 60}`,
-                `${~~((item.worked_minutes! - item.break_minutes!) / 60)}:${(item.worked_minutes! - item.break_minutes!) % 60}`,
+                `${~~(item.late_minutes! / 60)}:${String(item.late_minutes! % 60).padStart(2, '0')}`,
+                `${~~(item.break_minutes! / 60)}:${String(item.break_minutes! % 60).padStart(2, '0')}`,
+                `${~~(item.worked_minutes! / 60)}:${String(item.worked_minutes! % 60).padStart(2, '0')}`,
+                `${~~((item.worked_minutes! - item.break_minutes!) / 60)}:${String((item.worked_minutes! - item.break_minutes!) % 60).padStart(2, '0')}`,
                 item.late_days,
                 item.worked_days,
                 item.work_days,
@@ -172,16 +172,16 @@ const WorkerMonthlyAttendanceTable = ({ worker, searchData }: WorkerTableProps) 
                                      </td>
                                      <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.phone}</td>
                                      <td className="border border-gray-300 px-4 py-2 dark:border-gray-600 text-red-600 font-medium">
-                                         {~~(item.late_minutes! / 60)} : {item.late_minutes! % 60}
+                                         {~~(item.late_minutes! / 60)}:{String(item.late_minutes! % 60).padStart(2, '0')}
                                      </td>
                                      <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                         {~~(item.break_minutes! / 60)} : {item.break_minutes! % 60}
+                                         {~~(item.break_minutes! / 60)}:{String(item.break_minutes! % 60).padStart(2, '0')}
                                      </td>
                                      <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                         {~~(item.worked_minutes! / 60)} : {item.worked_minutes! % 60}
+                                         {~~(item.worked_minutes! / 60)}:{String(item.worked_minutes! % 60).padStart(2, '0')}
                                      </td>
                                      <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                         {~~((item.worked_minutes! - item.break_minutes!) / 60)} : {(item.worked_minutes! - item.break_minutes!) % 60}
+                                         {~~((item.worked_minutes! - item.break_minutes!) / 60)}:{String((item.worked_minutes! - item.break_minutes!) % 60).padStart(2, '0')}
                                      </td>
                                      <td className="border border-gray-300 px-4 py-2 dark:border-gray-600 text-red-600 font-medium">{item.late_days}</td>
                                      <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.worked_days}</td>
