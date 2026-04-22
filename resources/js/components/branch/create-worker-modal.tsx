@@ -37,10 +37,10 @@ export default function CreateWorkerModal({ branch }: createWorker) {
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm<FormData>({
         branch_id: branch.id,
-        work_time: '09:00',
-        end_time: '18:00',
-        hour_price: 0,
-        fine_price: 0,
+        work_time: branch.work_time?.slice(0, 5) || '09:00',
+        end_time: branch.end_time?.slice(0, 5) || '18:00',
+        hour_price: branch.hour_price || 0,
+        fine_price: branch.fine_price || 0,
         name: '',
         phone: '',
         address: '',
