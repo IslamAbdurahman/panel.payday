@@ -98,6 +98,7 @@ class ReportController extends Controller
                 ->select(
                     'attendances.worker_id',
                     'w.name as worker',
+                    'attendances.work_date',
                     'attendances.from_datetime as from',
                     'attendances.worked_minutes',
                     'attendances.break_minutes',
@@ -108,7 +109,7 @@ class ReportController extends Controller
 //            dd($resultsForReport);
 
             $groupedByDate = $resultsForReport->groupBy(function ($item) {
-                return $item->worker . '|' . \Carbon\Carbon::parse($item->from)->format('Y-m-d');
+                return $item->worker_id . '|' . $item->work_date;
             });
 
             $report = new \stdClass();
