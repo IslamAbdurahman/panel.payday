@@ -272,8 +272,10 @@ class HikvisionController extends Controller
 
                     $lastHikvisionAccessEvent = HikvisionAccessEvent::with([])
                         ->where('employeeNoString', '=', $accessEventData->employeeNoString)
-                        ->whereHas('hikvisionAccess', function ($query) use ($accessEventData) {
-                            $query->whereRaw("date(dateTime) = current_date");
+                        ->whereHas('hikvisionAccess', function ($query) use ($eventData) {
+                            $eventTime = isset($eventData->dateTime) ? Carbon::parse($eventData->dateTime) : Carbon::now();
+                            $query->where('dateTime', '>=', $eventTime->copy()->subHours(24))
+                                  ->where('dateTime', '<=', $eventTime);
                         })
                         ->latest()
                         ->first();
