@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
+import SearchableSelect from '@/components/ui/searchable-select';
 
 interface ReportFilterFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -15,31 +16,36 @@ interface ReportFilterFormProps {
 }
 
 const ReportFilterForm = ({
-                               handleSubmit, setData, data, firms,
-                               branches,
-                               workers
-                           }: ReportFilterFormProps) => {
+                                handleSubmit, setData, data, firms,
+                                branches,
+                                workers
+                            }: ReportFilterFormProps) => {
 
     const { t } = useTranslation(); // Hook to access translations
+
+    const [filteredBranches, setBranches] = React.useState<Branch[]>(branches);
+    const [filteredWorkers, setWorkers] = React.useState<Worker[]>(workers);
+
+    React.useEffect(() => {
+        let newBranches = branches;
+        if (data.firm_id) {
+            newBranches = branches.filter((b) => b.firm_id === data.firm_id);
+        }
+        setBranches(newBranches);
+
+        let newWorkers = workers;
+        if (data.branch_id) {
+            newWorkers = workers.filter((w) => w.branch_id === data.branch_id);
+        } else if (data.firm_id) {
+            const firmBranchIds = newBranches.map((b) => b.id);
+            newWorkers = workers.filter((w) => firmBranchIds.includes(w.branch_id));
+        }
+        setWorkers(newWorkers);
+    }, [data.firm_id, data.branch_id, branches, workers]);
+
     // Update search or per_page
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setData('search', e.target.value);
-    };
-
-    const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('per_page', parseInt(e.target.value, 10));  // parse as number
-    };
-
-    const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('firm_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
-    };
-
-    const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('branch_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
-    };
-
-    const handleWorkerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('worker_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
     };
 
     return (
@@ -54,18 +60,21 @@ const ReportFilterForm = ({
                     placeholder={t('search')}
                 />
 
-                {typeof data.total === 'number' &&
-                    <select
-                        value={data.per_page}
-                        onChange={handlePerPageChange}
-                        className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white">
-
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={data.total}>{t('pagination_optionAll')}</option>
-                    </select>
-                }
+                {typeof data.total === 'number' && (
+                    <div className="min-w-[80px]">
+                        <SearchableSelect
+                            value={data.per_page}
+                            onChange={(val) => setData('per_page', Number(val))}
+                            options={[
+                                { value: 10, label: '10' },
+                                { value: 25, label: '25' },
+                                { value: 50, label: '50' },
+                                { value: data.total, label: t('pagination_optionAll') }
+                            ]}
+                            isSearchable={false}
+                        />
+                    </div>
+                )}
 
                 <DatePicker
                     id="from-date"
@@ -87,46 +96,43 @@ const ReportFilterForm = ({
                 />
 
                 {/* Firm Select */}
-                <select
-                    value={data.firm_id || ''}
-                    onChange={handleFirmChange}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-                >
-                    <option value="">{t('select_firm')}</option>
-                    {firms.map((firm) => (
-                        <option key={firm.id} value={firm.id}>
-                            {firm.name}
-                        </option>
-                    ))}
-                </select>
+                <div className="min-w-[150px]">
+                    <SearchableSelect
+                        value={data.firm_id || 0}
+                        onChange={(val) => setData('firm_id', val ? Number(val) : undefined)}
+                        options={[
+                            { value: 0, label: t('select_firm') },
+                            ...firms.map((f) => ({ value: f.id, label: f.name }))
+                        ]}
+                        placeholder={t('select_firm')}
+                    />
+                </div>
 
                 {/* Branch Select */}
-                <select
-                    value={data.branch_id || ''}
-                    onChange={handleBranchChange}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-                >
-                    <option value="">{t('select_branch')}</option>
-                    {branches.map((branch) => (
-                        <option key={branch.id} value={branch.id}>
-                            {branch.name}
-                        </option>
-                    ))}
-                </select>
+                <div className="min-w-[150px]">
+                    <SearchableSelect
+                        value={data.branch_id || 0}
+                        onChange={(val) => setData('branch_id', val ? Number(val) : undefined)}
+                        options={[
+                            { value: 0, label: t('select_branch') },
+                            ...filteredBranches.map((b) => ({ value: b.id, label: b.name }))
+                        ]}
+                        placeholder={t('select_branch')}
+                    />
+                </div>
 
                 {/* Worker Select */}
-                <select
-                    value={data.worker_id || ''}
-                    onChange={handleWorkerChange}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-                >
-                    <option value="">{t('select_worker')}</option>
-                    {workers.map((worker) => (
-                        <option key={worker.id} value={worker.id}>
-                            {worker.name}
-                        </option>
-                    ))}
-                </select>
+                <div className="min-w-[200px]">
+                    <SearchableSelect
+                        value={data.worker_id || 0}
+                        onChange={(val) => setData('worker_id', val ? Number(val) : undefined)}
+                        options={[
+                            { value: 0, label: t('select_worker') },
+                            ...filteredWorkers.map((w) => ({ value: w.id, label: w.name }))
+                        ]}
+                        placeholder={t('select_worker')}
+                    />
+                </div>
 
 
                 {/* Submit button to apply filter */}

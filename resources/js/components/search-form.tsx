@@ -5,6 +5,7 @@ import React, { useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import SearchableSelect from '@/components/ui/searchable-select';
 
 interface SearchFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -19,6 +20,7 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
     const { t } = useTranslation(); // Hook to access translations
 
     const [filteredBranches, setBranches] = React.useState<Branch[] | undefined>(branches);
+    const [filteredWorkers, setWorkers] = React.useState<Worker[] | undefined>(workers);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setData('search', e.target.value);
@@ -52,12 +54,22 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
     };
 
     useEffect(() => {
+        let newBranches = branches;
         if (data.firm_id) {
-            setBranches(branches?.filter((branch) => branch.firm_id === data.firm_id));
-        } else {
-            setBranches(branches);
+            newBranches = branches?.filter((branch) => branch.firm_id === data.firm_id);
         }
-    }, [data, setBranches, branches]);
+        setBranches(newBranches);
+
+        let newWorkers = workers;
+        if (data.branch_id) {
+            newWorkers = workers?.filter((worker) => worker.branch_id === data.branch_id);
+        } else if (data.firm_id) {
+            // If firm is selected but not branch, filter workers by firm (if possible via branches)
+            const firmBranchIds = newBranches?.map(b => b.id) || [];
+            newWorkers = workers?.filter((worker) => firmBranchIds.includes(worker.branch_id));
+        }
+        setWorkers(newWorkers);
+    }, [data.firm_id, data.branch_id, branches, workers]);
 
     return (
         <form onSubmit={handleSubmit}>
@@ -73,16 +85,19 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                 />
 
                 {typeof data.total === 'number' && (
-                    <select
-                        value={data.per_page}
-                        onChange={handlePerPageChange}
-                        className="rounded border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
-                    >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={data.total}>{t('pagination_optionAll')}</option>
-                    </select>
+                    <div className="min-w-[80px]">
+                        <SearchableSelect
+                            value={data.per_page}
+                            onChange={(val) => setData('per_page', Number(val))}
+                            options={[
+                                { value: 10, label: '10' },
+                                { value: 25, label: '25' },
+                                { value: 50, label: '50' },
+                                { value: data.total, label: t('pagination_optionAll') }
+                            ]}
+                            isSearchable={false}
+                        />
+                    </div>
                 )}
 
                 <div className={'flex items-center justify-between'}>
@@ -139,48 +154,53 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                 )}
 
                 {firms && (
-                    <select
-                        value={data.firm_id || ''}
-                        onChange={handleFirmChange}
-                        className="rounded border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
-                    >
-                        <option value="0">{t('firm')}</option>
-                        {firms.map((firm) => (
-                            <option key={firm.id} value={firm.id}>
-                                {firm.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="min-w-[200px]">
+                        <SearchableSelect
+                            value={data.firm_id || 0}
+                            onChange={(val) => {
+                                const id = Number(val);
+                                setData('firm_id', id);
+                                if (id) {
+                                    setBranches(branches?.filter((b) => b.firm_id === id));
+                                } else {
+                                    setBranches(branches);
+                                }
+                            }}
+                            options={[
+                                { value: 0, label: t('firm') },
+                                ...firms.map((f) => ({ value: f.id, label: f.name }))
+                            ]}
+                            placeholder={t('firm')}
+                        />
+                    </div>
                 )}
 
                 {filteredBranches && (
-                    <select
-                        value={data.branch_id || ''}
-                        onChange={handleBranchChange}
-                        className="rounded border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
-                    >
-                        <option value="0">{t('branch')}</option>
-                        {filteredBranches.map((branch) => (
-                            <option key={branch.id} value={branch.id}>
-                                {branch.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="min-w-[200px]">
+                        <SearchableSelect
+                            value={data.branch_id || 0}
+                            onChange={(val) => setData('branch_id', Number(val))}
+                            options={[
+                                { value: 0, label: t('branch') },
+                                ...filteredBranches.map((b) => ({ value: b.id, label: b.name }))
+                            ]}
+                            placeholder={t('branch')}
+                        />
+                    </div>
                 )}
 
-                {workers && (
-                    <select
-                        value={data.worker_id || 0}
-                        onChange={handleWorkerChange}
-                        className="rounded border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
-                    >
-                        <option value="0">{t('worker')}</option>
-                        {workers.map((worker) => (
-                            <option key={worker.id} value={worker.id}>
-                                {worker.name}
-                            </option>
-                        ))}
-                    </select>
+                {filteredWorkers && (
+                    <div className="min-w-[200px]">
+                        <SearchableSelect
+                            value={data.worker_id || 0}
+                            onChange={(val) => setData('worker_id', Number(val))}
+                            options={[
+                                { value: 0, label: t('worker') },
+                                ...filteredWorkers.map((w) => ({ value: w.id, label: w.name }))
+                            ]}
+                            placeholder={t('worker')}
+                        />
+                    </div>
                 )}
 
                 <Button

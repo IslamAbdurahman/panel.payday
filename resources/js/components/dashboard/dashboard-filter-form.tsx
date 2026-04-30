@@ -3,6 +3,7 @@ import { Branch, Firm, SearchData } from '@/types';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import SearchableSelect from '@/components/ui/searchable-select';
 
 interface SearchFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -16,46 +17,45 @@ const DashboardFilterForm = ({ handleSubmit, setData, data, firms, branches }: S
 
     const { t } = useTranslation(); // Hook to access translations
 
-    const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('firm_id', parseInt(e.target.value, 10));  // parse as number
-    };
+    const [filteredBranches, setBranches] = React.useState<Branch[]>(branches || []);
 
-    const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('branch_id', parseInt(e.target.value, 10));  // parse as number
-    };
+    React.useEffect(() => {
+        if (data.firm_id) {
+            setBranches(branches?.filter((b) => b.firm_id === data.firm_id) || []);
+        } else {
+            setBranches(branches || []);
+        }
+    }, [data.firm_id, branches]);
 
     return (
         <form onSubmit={handleSubmit}>
             <div className="inline-flex rounded shadow-xs" role="group">
-                {firms &&
-                    <select
-                        value={data.firm_id || ''}
-                        onChange={handleFirmChange}
-                        className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-s-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-                    >
-                        <option value="0">{t('firm')}</option>
-                        {firms.map((firm) => (
-                            <option key={firm.id} value={firm.id}>
-                                {firm.name}
-                            </option>
-                        ))}
-                    </select>
-                }
-
-                {branches &&
-                    <select
-                        value={data.branch_id || ''}
-                        onChange={handleBranchChange}
-                        className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-                    >
-                        <option value="0">{t('branch')}</option>
-                        {branches.map((branch) => (
-                            <option key={branch.id} value={branch.id}>
-                                {branch.name}
-                            </option>
-                        ))}
-                    </select>
-                }
+                {firms && (
+                    <div className="min-w-[150px]">
+                        <SearchableSelect
+                            value={data.firm_id || 0}
+                            onChange={(val) => setData('firm_id', Number(val))}
+                            options={[
+                                { value: 0, label: t('firm') },
+                                ...firms.map((f) => ({ value: f.id, label: f.name }))
+                            ]}
+                            placeholder={t('firm')}
+                        />
+                    </div>
+                )}
+                {filteredBranches && (
+                    <div className="min-w-[150px]">
+                        <SearchableSelect
+                            value={data.branch_id || 0}
+                            onChange={(val) => setData('branch_id', Number(val))}
+                            options={[
+                                { value: 0, label: t('branch') },
+                                ...filteredBranches.map((b) => ({ value: b.id, label: b.name }))
+                            ]}
+                            placeholder={t('branch')}
+                        />
+                    </div>
+                )}
 
                 <Button
                     type="submit"
