@@ -140,6 +140,11 @@ class Worker extends Model
         return $this->hasMany(Salary::class, 'worker_id');
     }
 
+    public function attendances()
+    {
+        return $this->hasMany(\App\Models\Attendance\Attendance::class, 'worker_id');
+    }
+
     public function worker_days()
     {
         return $this->hasMany(WorkerDay::class, 'worker_id')

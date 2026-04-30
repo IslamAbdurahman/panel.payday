@@ -81,6 +81,12 @@ class HikvisionAccessEventController extends Controller
                 }
 
                 $hikvisionAccessEvent->faceReact()->delete();
+
+                // Delete associated attendances
+                \App\Models\Attendance\Attendance::where('from_event_id', $hikvisionAccessEvent->id)
+                    ->orWhere('to_event_id', $hikvisionAccessEvent->id)
+                    ->delete();
+
                 $hikvisionAccessEvent->delete();
 
                 // Only delete the parent HikvisionAccess if it's NOT the shared Telegram dummy record

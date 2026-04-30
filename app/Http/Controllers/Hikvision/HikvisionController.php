@@ -51,10 +51,11 @@ class HikvisionController extends Controller
         }
 
         $workers = Worker::with([
-            'HikvisionAccessEvents' => function ($query) use ($monthNumber, $year) {
-                $query->whereMonth('created_at', $monthNumber)
-                    ->whereYear('created_at', $year)
-                    ->where('attendanceStatus', "checkIn");
+            'attendances' => function ($query) use ($monthNumber, $year) {
+                $query->where('type', 'work')
+                    ->whereMonth('work_date', $monthNumber)
+                    ->whereYear('work_date', $year)
+                    ->select('worker_id', 'work_date', 'from_datetime', 'to_datetime', 'work_time');
             }
         ])
             ->select(
@@ -101,6 +102,27 @@ class HikvisionController extends Controller
 
         $workers->getCollection()->transform(function ($worker) use ($month) {
             $worker->holidays = $worker->getHoliday($month);
+            
+            // Map attendances to hikvision_access_events for frontend compatibility
+            $worker->hikvision_access_events = $worker->attendances->flatMap(function($attendance) {
+                $events = [];
+                if ($attendance->from_datetime) {
+                    $events[] = [
+                        'created_at' => $attendance->from_datetime->toDateTimeString(),
+                        'work_time' => $attendance->work_time,
+                        'attendanceStatus' => 'checkIn',
+                    ];
+                }
+                if ($attendance->to_datetime) {
+                    $events[] = [
+                        'created_at' => $attendance->to_datetime->toDateTimeString(),
+                        'work_time' => $attendance->work_time,
+                        'attendanceStatus' => 'checkOut',
+                    ];
+                }
+                return $events;
+            });
+
             return $worker;
         });
 
@@ -127,9 +149,9 @@ class HikvisionController extends Controller
         }
 
         $workers = Worker::with([
-            'HikvisionAccessEvents' => function ($query) use ($date) {
-                $query->whereDate('created_at', $date)
-                    ->whereIn('attendanceStatus', ["checkIn", "checkOut"]);
+            'attendances' => function ($query) use ($date) {
+                $query->where('work_date', $date)
+                    ->select('worker_id', 'work_date', 'from_datetime', 'to_datetime', 'work_time', 'type');
             }
         ])
             ->where('branch_id', '=', $branch->id)
@@ -148,6 +170,28 @@ class HikvisionController extends Controller
         }
 
         $workers = $workers->paginate($per_page);
+
+        $workers->getCollection()->transform(function ($worker) {
+            $worker->hikvision_access_events = $worker->attendances->flatMap(function($attendance) {
+                $events = [];
+                if ($attendance->from_datetime) {
+                    $events[] = [
+                        'created_at' => $attendance->from_datetime->toDateTimeString(),
+                        'work_time' => $attendance->work_time,
+                        'attendanceStatus' => $attendance->type === 'work' ? 'checkIn' : 'breakOut',
+                    ];
+                }
+                if ($attendance->to_datetime) {
+                    $events[] = [
+                        'created_at' => $attendance->to_datetime->toDateTimeString(),
+                        'work_time' => $attendance->work_time,
+                        'attendanceStatus' => $attendance->type === 'work' ? 'checkOut' : 'breakIn',
+                    ];
+                }
+                return $events;
+            });
+            return $worker;
+        });
 
 //        dd($workers,$request->all());
 
@@ -324,6 +368,23 @@ class HikvisionController extends Controller
                             'x' => $accessEventData->FaceRect->x ?? null,
                             'y' => $accessEventData->FaceRect->y ?? null,
                         ]);
+                    }
+
+                    // 4. Update Attendances table
+                    $status = $accessEventData->attendanceStatus;
+                    $attendanceService = app(\App\Services\AttendanceService::class);
+                    try {
+                        if (in_array($status, ['keldi', 'CheckIn', 'entered', 'checkIn'])) {
+                            $attendanceService->handleCheckIn($checkWorker, $hikvisionAccessEvent);
+                        } elseif (in_array($status, ['ketdi', 'CheckOut', 'exited', 'checkOut'])) {
+                            $attendanceService->handleCheckOut($checkWorker, $hikvisionAccessEvent);
+                        } elseif (in_array($status, ['Obetga ketdi', 'BreakOut', 'breakOut'])) {
+                            $attendanceService->handleBreakOut($checkWorker, $hikvisionAccessEvent);
+                        } elseif (in_array($status, ['Obetdan keldi', 'BreakIn', 'breakIn'])) {
+                            $attendanceService->handleBreakIn($checkWorker, $hikvisionAccessEvent);
+                        }
+                    } catch (\Exception $e) {
+                        telegramlog('Attendance xatolik: ' . $e->getMessage() . ' Line: ' . $e->getLine());
                     }
 
                     $webhookUrl = optional($checkWorker->branch->firm->firm_setting)->webhook_url;
