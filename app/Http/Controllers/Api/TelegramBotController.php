@@ -30,15 +30,24 @@ class TelegramBotController extends Controller
              // Return worker details and their current status for today
              $todayStr = Carbon::now()->toDateString();
              
+             // Use 24-hour lookback for status
+             $lookbackTime = Carbon::now()->subHours(24);
+             
              $todayCheckIn = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
-                 ->whereDate('created_at', $todayStr)
-                 ->where('attendanceStatus', '=', 'checkIn')
+                 ->whereHas('hikvisionAccess', function($q) use ($lookbackTime) {
+                     $q->where('dateTime', '>=', $lookbackTime);
+                 })
+                 ->whereIn('attendanceStatus', ['checkIn', 'keldi', 'entered'])
+                 ->latest()
                  ->first();
                  
-             $todayCheckOut = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
-                 ->whereDate('created_at', $todayStr)
-                 ->where('attendanceStatus', '=', 'checkOut')
-                 ->first();
+             $todayCheckOut = null;
+             if ($todayCheckIn) {
+                 $todayCheckOut = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
+                     ->where('created_at', '>', $todayCheckIn->created_at)
+                     ->whereIn('attendanceStatus', ['checkOut', 'ketdi', 'exited'])
+                     ->first();
+             }
 
             return response()->json([
                 'success' => true,
@@ -120,9 +129,11 @@ class TelegramBotController extends Controller
                 ], 400);
             }
 
-            // 3. Sequential Status Validation (mirroring HikvisionController)
+            // 3. Sequential Status Validation (24-hour lookback for night shifts)
             $lastHikvisionAccessEvent = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
-                ->whereDate('created_at', Carbon::today())
+                ->whereHas('hikvisionAccess', function ($query) {
+                    $query->where('dateTime', '>=', Carbon::now()->subHours(24));
+                })
                 ->latest()
                 ->first();
 
@@ -166,6 +177,7 @@ class TelegramBotController extends Controller
             ]);
 
             // 6. Save HikvisionAccessEvent (Aligning with Controller)
+            // 6. Save HikvisionAccessEvent (Aligning with Controller)
             $event = $hikvisionAccess->hikvisionAccessEvent()->create([
                 'deviceName' => 'Telegram_Mini_App',
                 'majorEventType' => 5,
@@ -185,6 +197,20 @@ class TelegramBotController extends Controller
                 'work_time' => $worker->work_time,
                 'end_time' => $worker->end_time,
             ]);
+
+            // 7. Update Attendances table (Syncing with new logic)
+            $attendanceService = app(\App\Services\AttendanceService::class);
+            try {
+                if (in_array($status, ['checkIn', 'keldi', 'entered'])) {
+                    $attendanceService->handleCheckIn($worker, $event);
+                } elseif (in_array($status, ['checkOut', 'ketdi', 'exited'])) {
+                    $attendanceService->handleCheckOut($worker, $event);
+                }
+            } catch (\Exception $e) {
+                if (function_exists('telegramlog')) {
+                    telegramlog("TMA Attendance Service Error: " . $e->getMessage() . " at " . $e->getLine());
+                }
+            }
 
             // 7. Webhook Trigger (mirroring HikvisionController)
             $webhookUrl = optional($worker->branch->firm->firm_setting)->webhook_url;
