@@ -41,7 +41,8 @@ class BackfillAttendancesCommand extends Command
             $this->info('Attendances table truncated.');
         }
 
-        $eventsQuery = HikvisionAccessEvent::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $eventsQuery = HikvisionAccessEvent::with('hikvisionAccess')
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->orderBy('created_at', 'asc');
 
         $totalEvents = $eventsQuery->count();

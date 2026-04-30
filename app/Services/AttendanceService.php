@@ -14,7 +14,7 @@ class AttendanceService
      */
     public function handleCheckIn(Worker $worker, HikvisionAccessEvent $event): Attendance
     {
-        $eventTime = Carbon::parse($event->created_at);
+        $eventTime = $event->hikvisionAccess ? Carbon::parse($event->hikvisionAccess->dateTime) : Carbon::parse($event->created_at);
         $isNightShift = $this->isNightShift($worker);
 
         // Determine the logical work_date
@@ -59,7 +59,7 @@ class AttendanceService
      */
     public function handleCheckOut(Worker $worker, HikvisionAccessEvent $event): ?Attendance
     {
-        $eventTime = Carbon::parse($event->created_at);
+        $eventTime = $event->hikvisionAccess ? Carbon::parse($event->hikvisionAccess->dateTime) : Carbon::parse($event->created_at);
         $isNightShift = $this->isNightShift($worker);
 
         // Find the last open 'work' attendance
@@ -94,7 +94,7 @@ class AttendanceService
      */
     public function handleBreakOut(Worker $worker, HikvisionAccessEvent $event): Attendance
     {
-        $eventTime = Carbon::parse($event->created_at);
+        $eventTime = $event->hikvisionAccess ? Carbon::parse($event->hikvisionAccess->dateTime) : Carbon::parse($event->created_at);
         $isNightShift = $this->isNightShift($worker);
         
         // Logical work date is typically today, or yesterday if it's a night shift and past midnight
@@ -123,7 +123,7 @@ class AttendanceService
      */
     public function handleBreakIn(Worker $worker, HikvisionAccessEvent $event): ?Attendance
     {
-        $eventTime = Carbon::parse($event->created_at);
+        $eventTime = $event->hikvisionAccess ? Carbon::parse($event->hikvisionAccess->dateTime) : Carbon::parse($event->created_at);
         $isNightShift = $this->isNightShift($worker);
 
         $query = Attendance::where('worker_id', $worker->id)
