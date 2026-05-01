@@ -36,66 +36,29 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
         worker.data.forEach((item, rowIndex) => {
             const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
 
-            const checkIns = item.hikvision_access_events?.filter(e => e.attendanceStatus === 'checkIn') || [];
-            const checkOuts = item.hikvision_access_events?.filter(e => e.attendanceStatus === 'checkOut') || [];
+            const workAttendances = item.attendances?.filter(a => a.type === 'work') || [];
 
-            // Prepare strings for multiple checkIns and checkOuts
-            const checkInTimes = checkIns.length
-                ? checkIns.map(ci => new Date(ci.created_at).toLocaleTimeString('en-US', { hour12: false })).join(', ')
+            const checkInTimes = workAttendances.length
+                ? workAttendances.map(a => a.from_datetime ? format(new Date(a.from_datetime), 'yyyy-MM-dd HH:mm:ss') : '-').join(', ')
                 : '-';
 
-            const checkOutTimes = checkOuts.length
-                ? checkOuts.map(co => new Date(co.created_at).toLocaleTimeString('en-US', { hour12: false })).join(', ')
+            const checkOutTimes = workAttendances.length
+                ? workAttendances.map(a => a.to_datetime ? format(new Date(a.to_datetime), 'yyyy-MM-dd HH:mm:ss') : '-').join(', ')
                 : '-';
 
-            // Late time calculation (only for first checkIn)
-            let lateTime = '-';
-            if (checkIns.length > 0) {
-                const ci = checkIns[0];
-                if (ci.work_time && ci.created_at) {
-                    const createdAt = parseISO(ci.created_at);
-                    const datePart = format(createdAt, 'yyyy-MM-dd');
-                    let workTimeStr = ci.work_time.trim();
-                    if (/^\d{2}:\d{2}$/.test(workTimeStr)) workTimeStr += ':00';
-                    if (/^\d{2}:\d{2}:\d{2}$/.test(workTimeStr)) {
-                        const workTime = new Date(`${datePart}T${workTimeStr}`);
-                        if (createdAt > workTime) {
-                            const totalSeconds = differenceInSeconds(createdAt, workTime);
-                            const hours = Math.floor(totalSeconds / 3600);
-                            const minutes = Math.floor((totalSeconds % 3600) / 60);
-                            const seconds = totalSeconds % 60;
-                            lateTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                        }
-                    }
-                }
-            }
+            // Late time calculation (using late_minutes from DB if possible, or maintaining minutes logic)
+            const lateTime = workAttendances[0]?.late_minutes ? `${workAttendances[0].late_minutes} min` : '-';
 
-            // Worked time calculation (pairs of checkIn/out)
-            let workedTimes = '-';
-            if (checkIns.length > 0 && checkOuts.length > 0) {
-                const times = checkIns.map((ci, i) => {
-                    const co = checkOuts[i];
-                    if (co?.created_at && ci?.created_at) {
-                        const inTime = new Date(ci.created_at).getTime();
-                        const outTime = new Date(co.created_at).getTime();
-                        const diffMs = outTime - inTime;
-                        const diffMinutes = Math.floor(diffMs / 60000);
-                        const hours = Math.floor(diffMinutes / 60);
-                        const minutes = diffMinutes % 60;
-                        return `${hours} : ${minutes}`;
-                    }
-                    return '-';
-                });
-                workedTimes = times.join(', ');
-            }
+            // Worked time calculation
+            const workedTimes = workAttendances.length
+                ? workAttendances.map(a => a.worked_minutes ? `${Math.floor(a.worked_minutes / 60)}h ${a.worked_minutes % 60}m` : '-').join(', ')
+                : '-';
 
             worksheet.addRow([
                 globalIndex,
                 item.name,
                 item.phone,
-                item.hikvision_access_events?.[0]?.created_at
-                    ? format(new Date(item.hikvision_access_events[0].created_at), 'yyyy-MM-dd')
-                    : '-',
+                workAttendances[0]?.work_date || '-',
                 checkInTimes,
                 checkOutTimes,
                 lateTime,
@@ -141,9 +104,7 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                     <tbody className="bg-white dark:bg-gray-800">
                     {worker.data?.map((item, rowIndex) => {
                         const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
-
-                        const checkIns = item.hikvision_access_events?.filter(event => event.attendanceStatus === 'checkIn') || [];
-                        const checkOuts = item.hikvision_access_events?.filter(event => event.attendanceStatus === 'checkOut') || [];
+                        const workAttendances = item.attendances?.filter(a => a.type === 'work') || [];
 
                         return (
                             <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -155,16 +116,14 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                 </td>
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.phone}</td>
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {item.hikvision_access_events?.[0]?.created_at
-                                        ? format(new Date(item.hikvision_access_events[0].created_at), 'yyyy-MM-dd')
-                                        : '-'}
+                                    {workAttendances[0]?.work_date || '-'}
                                 </td>
 
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {checkIns.length > 0 ? (
-                                        checkIns.map((ci, i) => (
+                                    {workAttendances.length > 0 ? (
+                                        workAttendances.map((a, i) => (
                                             <div key={i}>
-                                                {new Date(ci.created_at).toLocaleTimeString('en-US', { hour12: false })}
+                                                {a.from_datetime ? format(new Date(a.from_datetime), 'yyyy-MM-dd HH:mm:ss') : '-'}
                                             </div>
                                         ))
                                     ) : (
@@ -173,10 +132,10 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                 </td>
 
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {checkOuts.length > 0 ? (
-                                        checkOuts.map((co, i) => (
+                                    {workAttendances.length > 0 ? (
+                                        workAttendances.map((a, i) => (
                                             <div key={i}>
-                                                {new Date(co.created_at).toLocaleTimeString('en-US', { hour12: false })}
+                                                {a.to_datetime ? format(new Date(a.to_datetime), 'yyyy-MM-dd HH:mm:ss') : '-'}
                                             </div>
                                         ))
                                     ) : (
@@ -185,60 +144,24 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                 </td>
 
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {checkIns.length > 0 ? (
-                                        checkIns.map((ci, i) => {
-                                            if (!ci.work_time || !ci.created_at || i !== 0) return <div key={i}>-</div>;
-
-                                            const createdAt = parseISO(ci.created_at);
-                                            const datePart = format(createdAt, 'yyyy-MM-dd');
-
-                                            let workTimeStr = ci.work_time.trim();
-                                            if (/^\d{2}:\d{2}$/.test(workTimeStr)) workTimeStr += ':00';
-                                            if (!/^\d{2}:\d{2}:\d{2}$/.test(workTimeStr)) return <div key={i}>-</div>;
-
-                                            const workTime = new Date(`${datePart}T${workTimeStr}`);
-
-                                            if (createdAt <= workTime) return <div key={i}>-</div>;
-
-                                            const totalSeconds = differenceInSeconds(createdAt, workTime);
-                                            const hours = Math.floor(totalSeconds / 3600);
-                                            const minutes = Math.floor((totalSeconds % 3600) / 60);
-                                            const seconds = totalSeconds % 60;
-
-                                            return (
-                                                <div key={i}>
-                                                    {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-                                                </div>
-                                            );
-                                        })
+                                    {workAttendances.length > 0 ? (
+                                        workAttendances.map((a, i) => (
+                                            <div key={i}>
+                                                {a.late_minutes ? `${a.late_minutes} min` : '-'}
+                                            </div>
+                                        ))
                                     ) : (
                                         <div>-</div>
                                     )}
                                 </td>
 
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {checkIns.length > 0 && checkOuts.length > 0 ? (
-                                        checkIns.map((ci, i) => {
-                                            const co = checkOuts[i];
-
-                                            if (co?.created_at && ci?.created_at) {
-                                                const inTime = new Date(ci.created_at).getTime();
-                                                const outTime = new Date(co.created_at).getTime();
-                                                const diffMs = outTime - inTime;
-
-                                                const diffMinutes = Math.floor(diffMs / 60000);
-                                                const hours = Math.floor(diffMinutes / 60);
-                                                const minutes = diffMinutes % 60;
-
-                                                return (
-                                                    <div key={i}>
-                                                        {`${hours} : ${minutes}`}
-                                                    </div>
-                                                );
-                                            } else {
-                                                return <div key={i}>-</div>;
-                                            }
-                                        })
+                                    {workAttendances.length > 0 ? (
+                                        workAttendances.map((a, i) => (
+                                            <div key={i}>
+                                                {a.worked_minutes ? `${Math.floor(a.worked_minutes / 60)}h ${a.worked_minutes % 60}m` : '-'}
+                                            </div>
+                                        ))
                                     ) : (
                                         <div>-</div>
                                     )}

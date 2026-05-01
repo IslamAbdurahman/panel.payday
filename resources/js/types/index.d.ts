@@ -91,16 +91,21 @@ export interface AttendancePaginate {
 
 export interface Attendance {
     id: number;
-    worker: string;
-    branch: string;
+    worker_id: number;
+    worker?: Worker;
+    branch_id: number;
+    branch?: Branch;
+    type: 'work' | 'break';
+    work_date: string;
+    from_datetime: string;
+    to_datetime: string;
     work_time: string;
-    firm: string;
-    from: string;
-    to: string;
+    end_time: string;
     worked_minutes: number;
     break_minutes: number;
     late_minutes: number;
-    status: string;
+    is_night_shift: boolean;
+    is_first_check_in: boolean;
 
     [key: string]: unknown;
 }
@@ -339,6 +344,7 @@ export interface Worker {
     late_days?: number;
     work_days?: number;
     holidays?: number[];
+    attendances?: Attendance[];
 }
 
 export interface WorkerHistory {

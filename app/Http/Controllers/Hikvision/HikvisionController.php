@@ -151,49 +151,19 @@ class HikvisionController extends Controller
         $workers = Worker::with([
             'attendances' => function ($query) use ($date) {
                 $query->where('work_date', $date)
-                    ->select('worker_id', 'work_date', 'from_datetime', 'to_datetime', 'work_time', 'type');
+                    ->orderBy('from_datetime', 'asc');
             }
         ])
             ->where('branch_id', '=', $branch->id)
-            ->select(
-                'workers.*'
-            );
+            ->select('workers.*');
 
         if (!Auth::user()->hasRole('Admin')) {
-            $workers = $workers->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
+            $workers->whereHas('branch.firm.user_firms', function ($query) {
+                $query->where('user_id', Auth::id());
             });
         }
 
         $workers = $workers->paginate($per_page);
-
-        $workers->getCollection()->transform(function ($worker) {
-            $worker->hikvision_access_events = $worker->attendances->flatMap(function($attendance) {
-                $events = [];
-                if ($attendance->from_datetime) {
-                    $events[] = [
-                        'created_at' => $attendance->from_datetime->toDateTimeString(),
-                        'work_time' => $attendance->work_time,
-                        'attendanceStatus' => $attendance->type === 'work' ? 'checkIn' : 'breakOut',
-                    ];
-                }
-                if ($attendance->to_datetime) {
-                    $events[] = [
-                        'created_at' => $attendance->to_datetime->toDateTimeString(),
-                        'work_time' => $attendance->work_time,
-                        'attendanceStatus' => $attendance->type === 'work' ? 'checkOut' : 'breakIn',
-                    ];
-                }
-                return $events;
-            });
-            return $worker;
-        });
-
-//        dd($workers,$request->all());
 
         return Inertia::render('daily_attendance/index', [
             'worker' => $workers,
