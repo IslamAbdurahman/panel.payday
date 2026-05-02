@@ -203,16 +203,16 @@ class HikvisionController extends Controller
 
                 telegramlog('Hikvision Event qabul qilindi.');
 
-                // 2. Telegramga chiroyli (pretty) formatda yozish qismi
+                // 2. Telegram botga aynan siz xohlagan formatda (ichki qismi string bo'lgan holda) jo'natish:
                 $prettyRequest = $request->all();
                 if (isset($prettyRequest['AccessControllerEvent'])) {
-                    // Agar string bo'lsa arrayga o'tkazamiz, agar allaqachon array bo'lsa o'zini qoldiramiz
+                    // Agar array bo'lsa, uni \n va \t bilan escaped string holatiga keltiramiz
                     $prettyRequest['AccessControllerEvent'] = is_string($prettyRequest['AccessControllerEvent'])
-                        ? json_decode($prettyRequest['AccessControllerEvent'], true)
-                        : $prettyRequest['AccessControllerEvent'];
+                        ? $prettyRequest['AccessControllerEvent']
+                        : json_encode($prettyRequest['AccessControllerEvent'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 }
 
-                // Telegramga slashlarsiz, juda chiroyli json ko'rinishida yuboriladi
+                // Telegramga chiroyli json ko'rinishida yuboramiz
                 telegramlog(json_encode($prettyRequest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
                 $filename = '';
