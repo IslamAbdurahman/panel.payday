@@ -193,8 +193,6 @@ class HikvisionController extends Controller
     public function store(StoreFaceRectRequest $request)
     {
         try {
-            // 1. Agar request ichida AccessControllerEvent allaqachon array/object bo'lsa, uni string formatiga o'tkazib decode qilamiz.
-            // Bu orqali $eventData har doim to'g'ri obyekt bo'lishi ta'minlanadi.
             $rawEvent = $request->AccessControllerEvent;
             $eventData = is_string($rawEvent) ? json_decode($rawEvent) : json_decode(json_encode($rawEvent));
 
@@ -203,17 +201,17 @@ class HikvisionController extends Controller
 
                 telegramlog('Hikvision Event qabul qilindi.');
 
-                // 2. Telegram botga aynan siz xohlagan formatda (ichki qismi string bo'lgan holda) jo'natish:
+                // Aynan siz xohlagan formatni shakllantiramiz
                 $prettyRequest = $request->all();
                 if (isset($prettyRequest['AccessControllerEvent'])) {
-                    // Agar array bo'lsa, uni \n va \t bilan escaped string holatiga keltiramiz
+                    // Agar array bo'lsa, uni string ko'rinishiga keltiramiz
                     $prettyRequest['AccessControllerEvent'] = is_string($prettyRequest['AccessControllerEvent'])
                         ? $prettyRequest['AccessControllerEvent']
-                        : json_encode($prettyRequest['AccessControllerEvent'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        : json_encode($prettyRequest['AccessControllerEvent'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 }
 
-                // Telegramga chiroyli json ko'rinishida yuboramiz
-                telegramlog(json_encode($prettyRequest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                // Tayyor stringni telegramlog-ga uzatamiz
+                telegramlog(json_encode($prettyRequest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
                 $filename = '';
                 if ($request->hasFile('Picture')) {

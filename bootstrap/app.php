@@ -40,10 +40,15 @@ function telegramlog($text)
     try {
         $telegram = new \Telegram\Bot\Api($token);
 
+        // Agar $text array bo'lsa uni string qilamiz, string bo'lsa o'zini yuboramiz
+        $message = is_array($text) || is_object($text)
+            ? json_encode($text, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+            : $text;
+
         $telegram->sendMessage([
             'chat_id' => $chat_id,
-            'text' => json_encode($text, JSON_PRETTY_PRINT),
-            'parse_mode' => 'html',
+            'text' => $message,
+            // 'parse_mode' => 'html' ni o'chirib turgan ma'qul, chunki {} belgilar HTML xatosi berishi mumkin
         ]);
 
         return 1;
@@ -51,5 +56,4 @@ function telegramlog($text)
         \Illuminate\Support\Facades\Log::error('Telegram API Error: ' . $exception->getMessage());
         return $exception->getMessage();
     }
-
 }
