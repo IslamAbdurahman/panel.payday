@@ -102,9 +102,9 @@ class HikvisionController extends Controller
 
         $workers->getCollection()->transform(function ($worker) use ($month) {
             $worker->holidays = $worker->getHoliday($month);
-            
+
             // Map attendances to hikvision_access_events for frontend compatibility
-            $worker->hikvision_access_events = $worker->attendances->flatMap(function($attendance) {
+            $worker->hikvision_access_events = $worker->attendances->flatMap(function ($attendance) {
                 $events = [];
                 if ($attendance->from_datetime) {
                     $events[] = [
@@ -193,196 +193,198 @@ class HikvisionController extends Controller
     public function store(StoreFaceRectRequest $request)
     {
         try {
-            // Decode the AccessControllerEvent string into a PHP object
-            $eventData = json_decode($request->AccessControllerEvent);
+            // 1. Kelgan stringni array ko'rinishida decode qilamiz
+            $eventData = json_decode($request->input('AccessControllerEvent'), true);
 
-            if (isset($eventData->AccessControllerEvent->attendanceStatus)) {
-//                \Illuminate\Support\Facades\Log::info('Hikvision Event:', $request->all());
+            // Agar asosiy JSON decode bo'lmasa yoki ichki ma'lumotlar yo'q bo'lsa
+            if (!$eventData || !isset($eventData['AccessControllerEvent'])) {
+                telegramlog('Xato: AccessControllerEvent decode bo‘lmadi yoki bo‘sh.');
+                return response()->json(['success' => false, 'message' => 'Invalid data format'], 400);
+            }
 
-                telegramlog('Hikvision Event:');
+            // Ba'zida ichki AccessControllerEvent ham string bo'lib keladi, uni ham decode qilamiz
+            $accessEventData = $eventData['AccessControllerEvent'];
+            if (is_string($accessEventData)) {
+                $accessEventData = json_decode($accessEventData, true);
+            }
+
+            $attendanceStatus = $accessEventData['attendanceStatus'] ?? null;
+
+            if ($attendanceStatus) {
+                // Kelgan requestni telegramga log qilish
+                telegramlog('Hikvision Event qabul qilindi.');
                 telegramlog(json_encode($request->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-                $filename = '';
+                $filename = null;
+                $savedPath = 'Rasm yuklanmadi';
+
+                // 2. Rasmni saqlash
                 if ($request->hasFile('Picture')) {
                     $picture = $request->file('Picture');
+                    $serialNumber = $eventData['shortSerialNumber'] ?? 'unknown';
 
-                    // Fayl nomini generatsiya qilish (ixtiyoriy)
-                    $filename = time() . '_' . rand(1, 50) . '_' . $picture->getClientOriginalName();
+                    $filename = time() . '_' . rand(10, 99) . '_' . $picture->getClientOriginalName();
+                    $savedPath = $picture->storeAs("hikvision/{$serialNumber}", $filename, 'public');
 
-                    // Saqlash
-                    $savedPath = $picture->storeAs("hikvision/$eventData->shortSerialNumber", $filename, 'public'); // 3-chi parametr: 'public'
-
-                    // Matnli xabar yuborish (rasmsiz)
-                    $caption = 'Foydalanuvchi: ' . ($eventData->AccessControllerEvent->name ?? 'Noma\'lum') .
-                        "\nHolati: " . ($eventData->AccessControllerEvent->attendanceStatus ?? 'Noma\'lum') .
-                        "\nPath : $savedPath" .
-                        "\nPath : {$eventData->AccessControllerEvent->employeeNoString}";
+                    $caption = "Foydalanuvchi: " . ($accessEventData['name'] ?? 'Noma\'lum') .
+                        "\nHolati: " . $attendanceStatus .
+                        "\nPath : " . $savedPath .
+                        "\nID   : " . ($accessEventData['employeeNoString'] ?? 'Noma\'lum');
 
                     telegramlog($caption);
                 }
 
+                $employeeNoString = $accessEventData['employeeNoString'] ?? null;
 
-                $accessEventData = $eventData->AccessControllerEvent;
-
-                $checkWorker = Worker::with([])
-                    ->where('employeeNoString', '=', $accessEventData->employeeNoString)
-                    ->where('status', '=', 1)
+                // 3. Xodimni va uning ruxsatlarini tekshirish
+                $checkWorker = Worker::where('employeeNoString', $employeeNoString)
+                    ->where('status', 1)
                     ->whereHas('branch', function ($query) use ($eventData) {
-                        $query->whereHas('firm', function ($query) use ($eventData) {
-                            $query->where('status', '=', 1)
-                                ->where('valid_date', '>=', date('Y-m-d'));
-                        })
-                            ->whereHas('branch_devices', function ($query) use ($eventData) {
-                                $query->where('mac_address', '=', $eventData->macAddress)
-                                    ->where('status', '=', 1);
-                            });
+                        $query->whereHas('branch_devices', function ($q) use ($eventData) {
+                            $q->where('mac_address', $eventData['macAddress'] ?? '')
+                                ->where('status', 1);
+                        })->whereHas('firm', function ($q) {
+                            $q->where('status', 1)
+                                ->where('valid_date', '>=', now()->toDateString());
+                        });
                     })->first();
 
                 if ($checkWorker) {
 
-                    $lastHikvisionAccessEvent = HikvisionAccessEvent::with([])
-                        ->where('employeeNoString', '=', $accessEventData->employeeNoString)
+                    // 4. Oxirgi holatni olish (Status tekshiruvi uchun)
+                    $lastHikvisionAccessEvent = HikvisionAccessEvent::where('employeeNoString', $employeeNoString)
                         ->whereHas('hikvisionAccess', function ($query) use ($eventData) {
-                            $eventTime = isset($eventData->dateTime) ? Carbon::parse($eventData->dateTime) : Carbon::now();
+                            $eventTime = isset($eventData['dateTime']) ? Carbon::parse($eventData['dateTime']) : now();
                             $query->where('dateTime', '>=', $eventTime->copy()->subHours(24))
-                                  ->where('dateTime', '<=', $eventTime);
+                                ->where('dateTime', '<=', $eventTime);
                         })
                         ->latest()
                         ->first();
 
                     $lastStatus = $lastHikvisionAccessEvent ? $lastHikvisionAccessEvent->attendanceStatus : null;
 
-                    $status = $accessEventData->attendanceStatus;
-
-                    switch ($status) {
+                    // Switch case orqali ketma-ketlikni tekshirish
+                    switch ($attendanceStatus) {
                         case 'checkIn':
-                            if (is_null($lastStatus) || $lastStatus === 'checkOut') {
-                                // checkIn allowed
-                            } else {
-                                throw new \Exception('Kelgansiz.');
+                            if (!is_null($lastStatus) && $lastStatus !== 'checkOut') {
+                                throw new \Exception('Siz allaqachon kelgansiz (CheckIn qilgansiz).');
                             }
                             break;
 
                         case 'checkOut':
-                            if ($lastStatus === 'checkIn' || $lastStatus === 'breakIn') {
-                                // checkOut allowed
-                            } else {
-                                throw new \Exception('Kelmagansiz yoki Abetdasiz.');
+                            if ($lastStatus !== 'checkIn' && $lastStatus !== 'breakIn') {
+                                throw new \Exception('Siz hali kelmagansiz yoki abetdasiz.');
                             }
                             break;
 
                         case 'breakIn':
-                            if ($lastStatus === 'breakOut') {
-                                // breakIn allowed
-                            } else {
-                                throw new \Exception('Abetda emassiz.');
+                            if ($lastStatus !== 'breakOut') {
+                                throw new \Exception('Siz abetga chiqmagansiz.');
                             }
                             break;
 
                         case 'breakOut':
-                            if ($lastStatus === 'breakIn' || $lastStatus === 'checkIn') {
-                                // breakOut allowed
-                            } else {
-                                throw new \Exception('Abetdasiz.');
+                            if ($lastStatus !== 'breakIn' && $lastStatus !== 'checkIn') {
+                                throw new \Exception('Siz hozir abetga chiqa olmaysiz.');
                             }
                             break;
 
                         default:
-                            throw new \Exception('Noto‘g‘ri attendance holati.');
+                            throw new \Exception('Noma\'lum attendance holati: ' . $attendanceStatus);
                     }
 
-
-                    // 1. Save HikvisionAccess
+                    // 5. HikvisionAccess bazaga saqlash
                     $hikvisionAccess = HikvisionAccess::create([
-                        'ipAddress' => $eventData->ipAddress ?? null,
-                        'portNo' => $eventData->portNo ?? null,
-                        'protocol' => $eventData->protocol ?? null,
-                        'macAddress' => $eventData->macAddress ?? null,
-                        'channelId' => $eventData->channelID ?? null,
-//                        'dateTime' => date('Y-m-d H:i:s'),
-                        'dateTime' => isset($eventData->dateTime)
-                            ? Carbon::parse($eventData->dateTime)->timezone('Asia/Tashkent')->format('Y-m-d H:i:s')
-                            : null,
-                        'activePostCount' => $eventData->activePostCount ?? null,
-                        'eventType' => $eventData->eventType ?? null,
-                        'eventState' => $eventData->eventState ?? null,
-                        'eventDescription' => $eventData->eventDescription ?? null,
-                        'shortSerialNumber' => $eventData->shortSerialNumber ?? null,
+                        'ipAddress' => $eventData['ipAddress'] ?? null,
+                        'portNo' => $eventData['portNo'] ?? null,
+                        'protocol' => $eventData['protocol'] ?? null,
+                        'macAddress' => $eventData['macAddress'] ?? null,
+                        'channelId' => $eventData['channelID'] ?? null,
+                        'dateTime' => isset($eventData['dateTime'])
+                            ? Carbon::parse($eventData['dateTime'])->timezone('Asia/Tashkent')->format('Y-m-d H:i:s')
+                            : now()->timezone('Asia/Tashkent')->format('Y-m-d H:i:s'),
+                        'activePostCount' => $eventData['activePostCount'] ?? null,
+                        'eventType' => $eventData['eventType'] ?? null,
+                        'eventState' => $eventData['eventState'] ?? null,
+                        'eventDescription' => $eventData['eventDescription'] ?? null,
+                        'shortSerialNumber' => $eventData['shortSerialNumber'] ?? null,
                     ]);
 
-                    // 2. Save HikvisionAccessEvent
+                    // 6. HikvisionAccessEvent bazaga saqlash
                     $hikvisionAccessEvent = $hikvisionAccess->hikvisionAccessEvent()->create([
-                        'deviceName' => $accessEventData->deviceName ?? null,
-                        'majorEventType' => $accessEventData->majorEventType ?? null,
-                        'subEventType' => $accessEventData->subEventType ?? null,
-                        'name' => $accessEventData->name ?? null,
-                        'cardReaderNo' => $accessEventData->cardReaderNo ?? null,
-                        'employeeNoString' => $accessEventData->employeeNoString ?? null,
-                        'serialNo' => $accessEventData->serialNo ?? null,
-                        'userType' => $accessEventData->userType ?? null,
-                        'currentVerifyMode' => $accessEventData->currentVerifyMode ?? null,
-                        'frontSerialNo' => $accessEventData->frontSerialNo ?? null,
-                        'attendanceStatus' => $accessEventData->attendanceStatus ?? null,
-                        'label' => $accessEventData->label ?? null,
-                        'mask' => $accessEventData->mask ?? null,
-                        'picturesNumber' => $accessEventData->picturesNumber ?? null,
-                        'purePwdVerifyEnable' => $accessEventData->purePwdVerifyEnable ?? null,
+                        'deviceName' => $accessEventData['deviceName'] ?? null,
+                        'majorEventType' => $accessEventData['majorEventType'] ?? null,
+                        'subEventType' => $accessEventData['subEventType'] ?? null,
+                        'name' => $accessEventData['name'] ?? null,
+                        'cardReaderNo' => $accessEventData['cardReaderNo'] ?? null,
+                        'employeeNoString' => $accessEventData['employeeNoString'] ?? null,
+                        'serialNo' => $accessEventData['serialNo'] ?? null,
+                        'userType' => $accessEventData['userType'] ?? null,
+                        'currentVerifyMode' => $accessEventData['currentVerifyMode'] ?? null,
+                        'frontSerialNo' => $accessEventData['frontSerialNo'] ?? null,
+                        'attendanceStatus' => $attendanceStatus,
+                        'label' => $accessEventData['label'] ?? null,
+                        'mask' => $accessEventData['mask'] ?? null,
+                        'picturesNumber' => $accessEventData['picturesNumber'] ?? null,
+                        'purePwdVerifyEnable' => $accessEventData['purePwdVerifyEnable'] ?? null,
                         'picture' => $filename,
                         'work_time' => $checkWorker->work_time,
                         'end_time' => $checkWorker->end_time,
                     ]);
 
-                    // 3. Save FaceRect
-                    if (isset($accessEventData->FaceRect)) {
+                    // 7. FaceRect saqlash
+                    if (isset($accessEventData['FaceRect'])) {
+                        $face = $accessEventData['FaceRect'];
+                        // Agar FaceRect ham obyekt bo'lib kelsa arrayga o'tkazamiz
+                        $face = is_array($face) ? $face : (array)$face;
+
                         $hikvisionAccessEvent->faceReact()->create([
-                            'height' => $accessEventData->FaceRect->height ?? null,
-                            'width' => $accessEventData->FaceRect->width ?? null,
-                            'x' => $accessEventData->FaceRect->x ?? null,
-                            'y' => $accessEventData->FaceRect->y ?? null,
+                            'height' => $face['height'] ?? null,
+                            'width' => $face['width'] ?? null,
+                            'x' => $face['x'] ?? null,
+                            'y' => $face['y'] ?? null,
                         ]);
                     }
 
-                    // 4. Update Attendances table
-                    $status = $accessEventData->attendanceStatus;
+                    // 8. AttendanceService orqali hisoblash
                     $attendanceService = app(\App\Services\AttendanceService::class);
                     try {
-                        if (in_array($status, ['keldi', 'CheckIn', 'entered', 'checkIn'])) {
+                        if (in_array($attendanceStatus, ['keldi', 'CheckIn', 'entered', 'checkIn'])) {
                             $attendanceService->handleCheckIn($checkWorker, $hikvisionAccessEvent);
-                        } elseif (in_array($status, ['ketdi', 'CheckOut', 'exited', 'checkOut'])) {
+                        } elseif (in_array($attendanceStatus, ['ketdi', 'CheckOut', 'exited', 'checkOut'])) {
                             $attendanceService->handleCheckOut($checkWorker, $hikvisionAccessEvent);
-                        } elseif (in_array($status, ['Obetga ketdi', 'BreakOut', 'breakOut'])) {
+                        } elseif (in_array($attendanceStatus, ['Obetga ketdi', 'BreakOut', 'breakOut'])) {
                             $attendanceService->handleBreakOut($checkWorker, $hikvisionAccessEvent);
-                        } elseif (in_array($status, ['Obetdan keldi', 'BreakIn', 'breakIn'])) {
+                        } elseif (in_array($attendanceStatus, ['Obetdan keldi', 'BreakIn', 'breakIn'])) {
                             $attendanceService->handleBreakIn($checkWorker, $hikvisionAccessEvent);
                         }
                     } catch (\Exception $e) {
                         telegramlog('Attendance xatolik: ' . $e->getMessage() . ' Line: ' . $e->getLine());
                     }
 
+                    // 9. Webhook jo'natish
                     $webhookUrl = optional($checkWorker->branch->firm->firm_setting)->webhook_url;
-
                     if ($webhookUrl) {
                         try {
-                            Http::post($webhookUrl, $request->all());
+                            Http::timeout(5)->post($webhookUrl, $request->all());
                         } catch (\Exception $e) {
-                            telegramlog('Xatolik webhookUrl: ' . $e->getMessage() . $e->getLine());
+                            telegramlog('Xatolik webhookUrl: ' . $e->getMessage() . ' Line: ' . $e->getLine());
                         }
                     }
 
+                    return response()->json(['success' => true, 'message' => 'Saved successfully']);
                 } else {
-                    telegramlog('Worker topilmadi');
-
-                    return response()->json(['success' => false]);
+                    telegramlog('Worker topilmadi yoki firma/qurilma faol emas. ID: ' . $employeeNoString);
+                    return response()->json(['success' => false, 'message' => 'Worker not found'], 404);
                 }
-
             }
 
-            return response()->json(['success' => true]);
+            return response()->json(['success' => false, 'message' => 'AttendanceStatus topilmadi'], 400);
 
         } catch (\Exception $e) {
-            telegramlog('Xatolik: ' . $e->getMessage() . $e->getLine());
+            telegramlog('Xatolik: ' . $e->getMessage() . ' | Line: ' . $e->getLine());
             telegramlog(json_encode($request->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-            return response()->json(['error' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
