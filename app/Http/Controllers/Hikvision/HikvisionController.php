@@ -384,7 +384,7 @@ class HikvisionController extends Controller
         } catch (\Exception $e) {
             telegramlog('Xatolik: ' . $e->getMessage() . ' | Line: ' . $e->getLine());
             telegramlog(json_encode($request->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => $e->getMessage()], 200);
         }
     }
 
