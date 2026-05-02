@@ -193,20 +193,26 @@ class HikvisionController extends Controller
     public function store(StoreFaceRectRequest $request)
     {
         try {
-            // Decode the AccessControllerEvent string into a PHP object
-            $eventData = json_decode($request->AccessControllerEvent);
+            // 1. Agar request ichida AccessControllerEvent allaqachon array/object bo'lsa, uni string formatiga o'tkazib decode qilamiz.
+            // Bu orqali $eventData har doim to'g'ri obyekt bo'lishi ta'minlanadi.
+            $rawEvent = $request->AccessControllerEvent;
+            $eventData = is_string($rawEvent) ? json_decode($rawEvent) : json_decode(json_encode($rawEvent));
 
             if (isset($eventData->AccessControllerEvent->attendanceStatus)) {
 //                \Illuminate\Support\Facades\Log::info('Hikvision Event:', $request->all());
 
                 telegramlog('Hikvision Event qabul qilindi.');
 
-                // 1. JSON ichidagi stringni ham decode qilib, chiroyli (pretty) formatga keltiramiz
+                // 2. Telegramga chiroyli (pretty) formatda yozish qismi
                 $prettyRequest = $request->all();
                 if (isset($prettyRequest['AccessControllerEvent'])) {
-                    $prettyRequest['AccessControllerEvent'] = json_decode($prettyRequest['AccessControllerEvent'], true);
+                    // Agar string bo'lsa arrayga o'tkazamiz, agar allaqachon array bo'lsa o'zini qoldiramiz
+                    $prettyRequest['AccessControllerEvent'] = is_string($prettyRequest['AccessControllerEvent'])
+                        ? json_decode($prettyRequest['AccessControllerEvent'], true)
+                        : $prettyRequest['AccessControllerEvent'];
                 }
 
+                // Telegramga slashlarsiz, juda chiroyli json ko'rinishida yuboriladi
                 telegramlog(json_encode($prettyRequest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
                 $filename = '';
@@ -387,7 +393,6 @@ class HikvisionController extends Controller
             return response()->json(['success' => true]);
 
         } catch (\Exception $e) {
-            // 2. Catch ichida ortiqcha katta xabarni telegramga qayta yubormaymiz, faqat xatoni log qilamiz.
             telegramlog('Xatolik: ' . $e->getMessage() . ' | Line: ' . $e->getLine());
             return response()->json(['error' => $e->getMessage()]);
         }
