@@ -17,26 +17,27 @@ class AttendanceService
         $eventTime = $event->hikvisionAccess ? Carbon::parse($event->hikvisionAccess->dateTime) : Carbon::parse($event->created_at);
         $isNightShift = $this->isNightShift($worker);
 
+        telegramlog("handleCheckIn START: worker {$worker->id}");
+
         // Auto-close any orphaned open sessions
         $orphaned = Attendance::where('worker_id', $worker->id)
             ->whereNull('to_datetime')
             ->get();
             
-        if ($orphaned->count() > 0) {
-            telegramlog("Auto-closing " . $orphaned->count() . " orphaned sessions for worker " . $worker->id);
-        }
+        telegramlog("Found " . $orphaned->count() . " orphaned sessions for worker " . $worker->id);
 
-        $orphaned->each(function ($attendance) {
+        foreach ($orphaned as $attendance) {
+            telegramlog("Attempting to close session ID {$attendance->id} (from: {$attendance->from_datetime})");
             try {
-                $attendance->to_datetime = $attendance->from_datetime;
+                $attendance->to_datetime = $attendance->from_datetime ? clone $attendance->from_datetime : Carbon::now();
                 $attendance->worked_minutes = 0;
                 $attendance->comment = 'Avtomatik yopildi (Checkout unutilgan)';
-                $result = $attendance->save();
-                telegramlog("Orphaned session {$attendance->id} auto-closed: " . ($result ? 'SUCCESS' : 'FAILED'));
+                $saved = $attendance->save();
+                telegramlog("Auto-closed session {$attendance->id}. Saved: " . ($saved ? 'YES' : 'NO'));
             } catch (\Exception $e) {
-                telegramlog("Failed to auto-close session {$attendance->id}: " . $e->getMessage());
+                telegramlog("Error closing {$attendance->id}: " . $e->getMessage() . " at line " . $e->getLine());
             }
-        });
+        }
 
         // Determine the logical work_date
         // For night shift, if checkIn happens early morning (e.g., 01:00 AM), it might be for yesterday's shift if they are extremely late, 
