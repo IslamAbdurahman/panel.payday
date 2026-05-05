@@ -354,15 +354,20 @@ class HikvisionController extends Controller
                     // 4. Update Attendances table
                     $status = $accessEventData->attendanceStatus;
                     $attendanceService = app(\App\Services\AttendanceService::class);
+                    telegramlog("Attendance status: [{$status}]");
                     try {
                         if (in_array($status, ['keldi', 'CheckIn', 'entered', 'checkIn'])) {
+                            telegramlog("-> handleCheckIn chaqirilmoqda");
                             $attendanceService->handleCheckIn($checkWorker, $hikvisionAccessEvent);
+                            telegramlog("-> handleCheckIn TUGADI");
                         } elseif (in_array($status, ['ketdi', 'CheckOut', 'exited', 'checkOut'])) {
                             $attendanceService->handleCheckOut($checkWorker, $hikvisionAccessEvent);
                         } elseif (in_array($status, ['Obetga ketdi', 'BreakOut', 'breakOut'])) {
                             $attendanceService->handleBreakOut($checkWorker, $hikvisionAccessEvent);
                         } elseif (in_array($status, ['Obetdan keldi', 'BreakIn', 'breakIn'])) {
                             $attendanceService->handleBreakIn($checkWorker, $hikvisionAccessEvent);
+                        } else {
+                            telegramlog("-> Hech qaysi shartga kirmadi! Status: [{$status}]");
                         }
                     } catch (\Exception $e) {
                         telegramlog('Attendance xatolik: ' . $e->getMessage() . ' Line: ' . $e->getLine());
