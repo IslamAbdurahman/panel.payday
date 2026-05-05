@@ -43,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/monthly_attendance', [\App\Http\Controllers\ReportController::class , 'monthly_attendance']);
     Route::get('/salary_report', [\App\Http\Controllers\ReportController::class , 'salary_report']);
+    Route::put('/attendance/{id}', [\App\Http\Controllers\ReportController::class , 'update_attendance'])->name('attendance.update');
 
 });
 

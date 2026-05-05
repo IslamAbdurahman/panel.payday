@@ -76,6 +76,7 @@ class ReportController extends Controller
 
             $results = (clone $query)
                 ->select(
+                    'attendances.id',
                     'attendances.worker_id',
                     'w.name as worker',
                     'w.phone',
@@ -370,5 +371,30 @@ class ReportController extends Controller
         ]);
     }
 
+    public function update_attendance(Request $request, $id)
+    {
+        $request->validate([
+            'to_datetime' => 'required|date'
+        ]);
 
+        $attendance = \App\Models\Attendance\Attendance::findOrFail($id);
+        
+        $from = Carbon::parse($attendance->from_datetime);
+        $to = Carbon::parse($request->to_datetime);
+        
+        // Calculate worked minutes
+        $workedMinutes = $from->diffInMinutes($to);
+        
+        $attendance->to_datetime = $request->to_datetime;
+        $attendance->worked_minutes = $workedMinutes;
+        
+        // If it was auto-closed before, mark it as manually edited
+        if (str_contains($attendance->comment, 'Avtomatik yopildi')) {
+            $attendance->comment = 'Tahrirlandi: Avtomatik yopildi';
+        }
+        
+        $attendance->save();
+
+        return back()->with('success', 'Davomat vaqti tahrirlandi');
+    }
 }
