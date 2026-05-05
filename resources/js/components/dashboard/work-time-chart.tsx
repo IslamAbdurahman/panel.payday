@@ -45,12 +45,8 @@ const WorkTimeChart = ({ daily_stats }: Props) => {
             height: 350
         },
         xaxis: {
-            categories: data.map(item => item.worked_date),
-            labels: {
-                style: {
-                    colors: labelColor
-                }
-            }
+            type: 'category',
+            categories: data.map(item => item.worked_date)
         },
         yaxis: {
             title: {
@@ -60,9 +56,6 @@ const WorkTimeChart = ({ daily_stats }: Props) => {
                 }
             },
             labels: {
-                style: {
-                    colors: labelColor
-                },
                 formatter: (val: number) => val.toFixed(1) // ✅ One decimal place
             }
         },
