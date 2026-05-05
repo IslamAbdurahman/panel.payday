@@ -200,19 +200,8 @@ class HikvisionController extends Controller
             if (isset($eventData->AccessControllerEvent->attendanceStatus)) {
 //                \Illuminate\Support\Facades\Log::info('Hikvision Event:', $request->all());
 
-                telegramlog('Hikvision Event qabul qilindi.');
-
-                // Aynan siz xohlagan formatni shakllantiramiz
-                $prettyRequest = $request->all();
-                if (isset($prettyRequest['AccessControllerEvent'])) {
-                    // Agar array bo'lsa, uni string ko'rinishiga keltiramiz
-                    $prettyRequest['AccessControllerEvent'] = is_string($prettyRequest['AccessControllerEvent'])
-                        ? $prettyRequest['AccessControllerEvent']
-                        : json_encode($prettyRequest['AccessControllerEvent'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-                }
-
-                // Tayyor stringni telegramlog-ga uzatamiz
-                telegramlog(json_encode($prettyRequest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                telegramlog('Hikvision Event: ' . ($accessEventData->name ?? '?') . ' -> ' . ($accessEventData->attendanceStatus ?? '?'));
+                \Illuminate\Support\Facades\Log::info('Hikvision Event', ['status' => $accessEventData->attendanceStatus ?? null, 'worker' => $accessEventData->employeeNoString ?? null]);
 
                 $filename = '';
                 if ($request->hasFile('Picture')) {
@@ -354,12 +343,12 @@ class HikvisionController extends Controller
                     // 4. Update Attendances table
                     $status = $accessEventData->attendanceStatus;
                     $attendanceService = app(\App\Services\AttendanceService::class);
-                    telegramlog("Attendance status: [{$status}]");
+                    \Illuminate\Support\Facades\Log::info("[Attendance] status=[{$status}] worker={$checkWorker->id}");
                     try {
                         if (in_array($status, ['keldi', 'CheckIn', 'entered', 'checkIn'])) {
-                            telegramlog("-> handleCheckIn chaqirilmoqda");
+                            \Illuminate\Support\Facades\Log::info("[Attendance] handleCheckIn START worker={$checkWorker->id}");
                             $attendanceService->handleCheckIn($checkWorker, $hikvisionAccessEvent);
-                            telegramlog("-> handleCheckIn TUGADI");
+                            \Illuminate\Support\Facades\Log::info("[Attendance] handleCheckIn DONE worker={$checkWorker->id}");
                         } elseif (in_array($status, ['ketdi', 'CheckOut', 'exited', 'checkOut'])) {
                             $attendanceService->handleCheckOut($checkWorker, $hikvisionAccessEvent);
                         } elseif (in_array($status, ['Obetga ketdi', 'BreakOut', 'breakOut'])) {
@@ -367,9 +356,11 @@ class HikvisionController extends Controller
                         } elseif (in_array($status, ['Obetdan keldi', 'BreakIn', 'breakIn'])) {
                             $attendanceService->handleBreakIn($checkWorker, $hikvisionAccessEvent);
                         } else {
-                            telegramlog("-> Hech qaysi shartga kirmadi! Status: [{$status}]");
+                            \Illuminate\Support\Facades\Log::warning("[Attendance] HECH QAYSI shartga kirmadi: [{$status}]");
+                            telegramlog("Status noto'g'ri: [{$status}]");
                         }
                     } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("[Attendance] xatolik: " . $e->getMessage() . ' Line: ' . $e->getLine());
                         telegramlog('Attendance xatolik: ' . $e->getMessage() . ' Line: ' . $e->getLine());
                     }
 
