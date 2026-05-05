@@ -198,7 +198,8 @@ class HikvisionController extends Controller
             $eventData = is_string($rawEvent) ? json_decode($rawEvent) : json_decode(json_encode($rawEvent));
 
             if (isset($eventData->AccessControllerEvent->attendanceStatus)) {
-//                \Illuminate\Support\Facades\Log::info('Hikvision Event:', $request->all());
+                $accessEventData = $eventData->AccessControllerEvent;
+                $eventTime = Carbon::parse($eventData->dateTime);
 
                 telegramlog('Hikvision Event: ' . ($accessEventData->name ?? '?') . ' -> ' . ($accessEventData->attendanceStatus ?? '?'));
                 \Illuminate\Support\Facades\Log::info('Hikvision Event', ['status' => $accessEventData->attendanceStatus ?? null, 'worker' => $accessEventData->employeeNoString ?? null]);
@@ -214,17 +215,13 @@ class HikvisionController extends Controller
                     $savedPath = $picture->storeAs("hikvision/$eventData->shortSerialNumber", $filename, 'public'); // 3-chi parametr: 'public'
 
                     // Matnli xabar yuborish (rasmsiz)
-                    $caption = 'Foydalanuvchi: ' . ($eventData->AccessControllerEvent->name ?? 'Noma\'lum') .
-                        "\nHolati: " . ($eventData->AccessControllerEvent->attendanceStatus ?? 'Noma\'lum') .
+                    $caption = 'Foydalanuvchi: ' . ($accessEventData->name ?? 'Noma\'lum') .
+                        "\nHolati: " . ($accessEventData->attendanceStatus ?? 'Noma\'lum') .
                         "\nPath : $savedPath" .
-                        "\nPath : {$eventData->AccessControllerEvent->employeeNoString}";
+                        "\nPath : {$accessEventData->employeeNoString}";
 
                     telegramlog($caption);
                 }
-
-
-                $accessEventData = $eventData->AccessControllerEvent;
-                $eventTime = Carbon::parse($eventData->dateTime);
 
                 $checkWorker = Worker::with([])
                     ->where('employeeNoString', '=', $accessEventData->employeeNoString)
