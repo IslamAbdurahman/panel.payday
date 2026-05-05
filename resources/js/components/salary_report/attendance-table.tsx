@@ -169,7 +169,8 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                                         timeFormat="HH:mm"
                                         timeIntervals={1}
                                         dateFormat="yyyy-MM-dd HH:mm"
-                                        className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                        readOnly={true}
+                                        className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                                     />
                                 </div>
                                 {errors.to_datetime && <p className="text-sm text-red-500">{errors.to_datetime}</p>}
