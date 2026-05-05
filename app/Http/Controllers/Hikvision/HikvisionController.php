@@ -235,6 +235,7 @@ class HikvisionController extends Controller
 
 
                 $accessEventData = $eventData->AccessControllerEvent;
+                $eventTime = Carbon::parse($eventData->dateTime);
 
                 $checkWorker = Worker::with([])
                     ->where('employeeNoString', '=', $accessEventData->employeeNoString)
@@ -270,7 +271,7 @@ class HikvisionController extends Controller
                     // If a new checkIn comes but there is an open session that is too old (> 16h),
                     // we allow the new checkIn (AttendanceService will handle closing the old one).
                     if ($status === 'checkIn' && $openAttendance) {
-                        $hoursOpen = Carbon::parse($openAttendance->from_datetime)->diffInHours(now());
+                        $hoursOpen = Carbon::parse($openAttendance->from_datetime)->diffInHours($eventTime);
                         if ($hoursOpen > 16) {
                             $openAttendance = null;
                             $lastStatus = 'checkOut'; // Mock last status to allow checkIn
@@ -282,7 +283,7 @@ class HikvisionController extends Controller
                             if (is_null($openAttendance) || $lastStatus === 'checkOut') {
                                 // checkIn allowed
                             } else {
-                                throw new \Exception('Siz allaqachon kelgansiz.');
+                                throw new \Exception('Kelgansiz.');
                             }
                             break;
 
