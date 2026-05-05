@@ -21,7 +21,8 @@ class AttendanceService
         Attendance::where('worker_id', $worker->id)
             ->whereNull('to_datetime')
             ->update([
-                'to_datetime' => $eventTime,
+                'to_datetime' => \Illuminate\Support\Facades\DB::raw('from_datetime'),
+                'worked_minutes' => 0,
                 'comment' => 'Avtomatik yopildi (Checkout unutilgan)'
             ]);
 
@@ -111,7 +112,8 @@ class AttendanceService
             ->where('type', 'break')
             ->whereNull('to_datetime')
             ->update([
-                'to_datetime' => $eventTime,
+                'to_datetime' => \Illuminate\Support\Facades\DB::raw('from_datetime'),
+                'break_minutes' => 0,
                 'comment' => 'Avtomatik yopildi (BreakIn unutilgan)'
             ]);
         
