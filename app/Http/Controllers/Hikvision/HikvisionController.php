@@ -271,11 +271,15 @@ class HikvisionController extends Controller
                     // If a new checkIn comes but there is an open session that is too old (> 16h),
                     // we allow the new checkIn (AttendanceService will handle closing the old one).
                     if ($status === 'checkIn' && $openAttendance) {
-                        $hoursOpen = Carbon::parse($openAttendance->from_datetime)->diffInHours($eventTime);
-                        if ($hoursOpen > 16) {
-                            telegramlog("Session for worker {$checkWorker->id} is too old ({$hoursOpen}h). Mocking as closed to allow new checkIn.");
+                        $newWorkDate = $eventTime->toDateString();
+                        $hoursOpen = $openAttendance->from_datetime->diffInHours($eventTime);
+                        
+                        telegramlog("CheckIn debug: worker={$checkWorker->id}, open_id={$openAttendance->id}, open_date={$openAttendance->work_date}, new_date={$newWorkDate}, hours_open={$hoursOpen}");
+
+                        if ($openAttendance->work_date !== $newWorkDate || $hoursOpen > 16) {
+                            telegramlog("Session for worker {$checkWorker->id} is old or different date. Mocking as closed.");
                             $openAttendance = null;
-                            $lastStatus = 'checkOut'; // Mock last status to allow checkIn
+                            $lastStatus = 'checkOut'; 
                         }
                     }
 
