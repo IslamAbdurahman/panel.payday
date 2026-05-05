@@ -6,7 +6,6 @@ use App\Models\Attendance\Attendance;
 use App\Models\Hikvision\HikvisionAccessEvent;
 use App\Models\Worker\Worker;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class AttendanceService
 {
@@ -18,25 +17,22 @@ class AttendanceService
         $eventTime = $event->hikvisionAccess ? Carbon::parse($event->hikvisionAccess->dateTime) : Carbon::parse($event->created_at);
         $isNightShift = $this->isNightShift($worker);
 
-        // Auto-close any orphaned open sessions using a direct DB query
-        // (bypasses Eloquent casting and event issues for reliability)
-        $orphanedIds = DB::table('attendances')
-            ->where('worker_id', $worker->id)
+        // Auto-close any orphaned open sessions using Eloquent ORM
+        $orphaned = Attendance::where('worker_id', $worker->id)
             ->whereNull('to_datetime')
-            ->pluck('from_datetime', 'id');
+            ->get();
 
-            telegramlog("Orphaned IDs: ");
+        if ($orphaned->isNotEmpty()) {
+            $ids = $orphaned->pluck('id')->toArray();
+            telegramlog("Orphaned IDs: " . json_encode($ids) . " for worker {$worker->id}");
 
-        if ($orphanedIds->isNotEmpty()) {
-            foreach ($orphanedIds as $id => $fromDatetime) {
-                DB::table('attendances')->where('id', $id)->update([
-                    'to_datetime'     => $fromDatetime,
-                    'worked_minutes'  => 0,
-                    'comment'         => 'Avtomatik yopildi (Checkout unutilgan)',
-                    'updated_at'      => Carbon::now()->format('Y-m-d H:i:s'),
-                ]);
+            foreach ($orphaned as $attendance) {
+                $attendance->to_datetime = $attendance->from_datetime;
+                $attendance->worked_minutes = 0;
+                $attendance->comment = 'Avtomatik yopildi (Checkout unutilgan)';
+                $attendance->save();
             }
-            telegramlog("Auto-closed " . $orphanedIds->count() . " orphaned sessions for worker {$worker->id}");
+            telegramlog("Auto-closed " . $orphaned->count() . " orphaned sessions for worker {$worker->id}");
         }
 
         // Determine the logical work_date
