@@ -18,13 +18,21 @@ class AttendanceService
         $isNightShift = $this->isNightShift($worker);
 
         // Auto-close any orphaned open sessions
-        Attendance::where('worker_id', $worker->id)
+        $orphaned = Attendance::where('worker_id', $worker->id)
             ->whereNull('to_datetime')
-            ->update([
-                'to_datetime' => \Illuminate\Support\Facades\DB::raw('from_datetime'),
-                'worked_minutes' => 0,
-                'comment' => 'Avtomatik yopildi (Checkout unutilgan)'
-            ]);
+            ->get();
+            
+        if ($orphaned->count() > 0) {
+            telegramlog("Auto-closing " . $orphaned->count() . " orphaned sessions for worker " . $worker->id);
+        }
+
+        $orphaned->each(function ($attendance) {
+                $attendance->update([
+                    'to_datetime' => $attendance->from_datetime,
+                    'worked_minutes' => 0,
+                    'comment' => 'Avtomatik yopildi (Checkout unutilgan)'
+                ]);
+            });
 
         // Determine the logical work_date
         // For night shift, if checkIn happens early morning (e.g., 01:00 AM), it might be for yesterday's shift if they are extremely late, 
@@ -111,11 +119,14 @@ class AttendanceService
         Attendance::where('worker_id', $worker->id)
             ->where('type', 'break')
             ->whereNull('to_datetime')
-            ->update([
-                'to_datetime' => \Illuminate\Support\Facades\DB::raw('from_datetime'),
-                'break_minutes' => 0,
-                'comment' => 'Avtomatik yopildi (BreakIn unutilgan)'
-            ]);
+            ->get()
+            ->each(function ($attendance) {
+                $attendance->update([
+                    'to_datetime' => $attendance->from_datetime,
+                    'break_minutes' => 0,
+                    'comment' => 'Avtomatik yopildi (BreakIn unutilgan)'
+                ]);
+            });
         
         // Logical work date is typically today, or yesterday if it's a night shift and past midnight
         $workDate = $eventTime->toDateString();

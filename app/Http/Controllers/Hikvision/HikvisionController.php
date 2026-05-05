@@ -273,6 +273,7 @@ class HikvisionController extends Controller
                     if ($status === 'checkIn' && $openAttendance) {
                         $hoursOpen = Carbon::parse($openAttendance->from_datetime)->diffInHours($eventTime);
                         if ($hoursOpen > 16) {
+                            telegramlog("Session for worker {$checkWorker->id} is too old ({$hoursOpen}h). Mocking as closed to allow new checkIn.");
                             $openAttendance = null;
                             $lastStatus = 'checkOut'; // Mock last status to allow checkIn
                         }
