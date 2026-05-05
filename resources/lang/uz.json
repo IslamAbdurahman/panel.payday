@@ -225,5 +225,9 @@
     "off_day": "Dam olish kuni",
     "fine": "Jarima",
     "user_firm": "Foydalanuvchi firmasi",
-    "select": "Tanlash"
+    "select": "Tanlash",
+    "edit_attendance": "Davomatni tahrirlash",
+    "edit": "Tahrirlash",
+    "auto_closed": "Avtomatik yopildi (Checkout unutilgan)",
+    "edited_auto_closed": "Tahrirlandi: Avtomatik yopildi"
 }

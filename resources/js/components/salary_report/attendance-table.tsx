@@ -89,7 +89,15 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                             <div className="flex flex-col items-start gap-1">
                                                 <span>{item.status}</span>
-                                                {item.comment && <span className="text-xs text-gray-500 italic">{item.comment}</span>}
+                                                {item.comment && (
+                                                    <span className="text-xs text-gray-500 italic">
+                                                        {item.comment === 'Avtomatik yopildi (Checkout unutilgan)'
+                                                            ? t('auto_closed')
+                                                            : item.comment === 'Tahrirlandi: Avtomatik yopildi'
+                                                            ? t('edited_auto_closed')
+                                                            : item.comment}
+                                                    </span>
+                                                )}
                                                 {isAutoClosed && (
                                                     <Button
                                                         variant="outline"
@@ -147,20 +155,20 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
             <Dialog open={!!editingAttendance} onOpenChange={(open) => !open && closeEditModal()}>
                 <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader>
-                        <DialogTitle>{t('edit_attendance') || 'Davomatni tahrirlash'}</DialogTitle>
+                        <DialogTitle>{t('edit_attendance')}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={submitEdit}>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label>{t('worker') || 'Xodim'}</Label>
+                                <Label>{t('worker')}</Label>
                                 <Input disabled value={editingAttendance?.worker || ''} />
                             </div>
                             <div className="space-y-2">
-                                <Label>{t('from') || 'Kelgan vaqti'}</Label>
+                                <Label>{t('from')}</Label>
                                 <Input disabled value={editingAttendance?.from || ''} />
                             </div>
                             <div className="space-y-2">
-                                <Label>{t('to') || 'Ketgan vaqti (Tahrirlash)'}</Label>
+                                <Label>{t('to')}</Label>
                                 <div className="block">
                                     <DatePicker
                                         selected={data.to_datetime ? new Date(data.to_datetime) : null}
@@ -179,10 +187,10 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={closeEditModal}>
-                                {t('cancel') || 'Bekor qilish'}
+                                {t('cancel')}
                             </Button>
                             <Button type="submit" disabled={processing}>
-                                {t('save') || 'Saqlash'}
+                                {t('save')}
                             </Button>
                         </DialogFooter>
                     </form>

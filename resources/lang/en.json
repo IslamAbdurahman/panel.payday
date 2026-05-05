@@ -225,5 +225,9 @@
     "off_day": "Off day",
     "fine": "Fine",
     "user_firm": "User firm",
-    "select": "Select"
+    "select": "Select",
+    "edit_attendance": "Edit Attendance",
+    "edit": "Edit",
+    "auto_closed": "Auto-closed (Checkout forgotten)",
+    "edited_auto_closed": "Edited: Auto-closed"
 }
