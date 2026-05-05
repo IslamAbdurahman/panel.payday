@@ -87,6 +87,7 @@ class ReportController extends Controller
                     'attendances.to_datetime as to',
                     'attendances.worked_minutes',
                     'attendances.break_minutes',
+                    'attendances.comment',
                     DB::raw('IF(attendances.late_minutes > 0, attendances.late_minutes, 0) as late_minutes'),
                     DB::raw('IF(attendances.type = "break", "Dam olish (Break)", IF(attendances.is_night_shift, "Tungi Smena", "Kunduzgi Smena")) as status')
                 )

@@ -34,8 +34,9 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                         <tbody className="bg-white dark:bg-gray-800">
                             {attendance.data.map((item, index) => {
                                 const globalIndex = (attendance.current_page - 1) * attendance.per_page + index + 1;
+                                const isAutoClosed = item.comment?.includes('Avtomatik yopildi');
                                 return (
-                                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <tr key={item.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${isAutoClosed ? 'bg-orange-50 dark:bg-orange-950/20 text-orange-900 dark:text-orange-200' : ''}`}>
                                         <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{globalIndex}</td>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.worker}</td>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
@@ -47,7 +48,10 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.worked_minutes}</td>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.break_minutes}</td>
                                         <td className="border border-gray-300 px-4 py-2 dark:border-gray-600 text-red-600 font-medium">{item.late_minutes}</td>
-                                        <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{item.status}</td>
+                                        <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
+                                            {item.status}
+                                            {item.comment && <div className="text-xs text-gray-500 italic">{item.comment}</div>}
+                                        </td>
                                     </tr>
                                 );
                             })}

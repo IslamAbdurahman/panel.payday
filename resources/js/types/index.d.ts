@@ -106,6 +106,7 @@ export interface Attendance {
     late_minutes: number;
     is_night_shift: boolean;
     is_first_check_in: boolean;
+    comment?: string;
 
     [key: string]: unknown;
 }
