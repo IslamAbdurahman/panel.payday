@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import { DailyStats } from '@/types';
@@ -10,43 +10,48 @@ type Props = {
     daily_stats: DailyStats[];
 };
 
-const WorkTimeChart = ({ daily_stats }: Props) => {
-    const data = daily_stats;
-
+const WorkTimeChart = ({ daily_stats = [] }: Props) => {
     const { t } = useTranslation();
-
     const { appearance } = useAppearance();
 
     const resolvedTheme = appearance === 'system'
-        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        ? (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : appearance;
-
-    const series = [
-        {
-            name: t('worked'),
-            data: data.map(item => parseFloat(item.worked_hours))
-        },
-        {
-            name: t('break'),
-            data: data.map(item => parseFloat(item.break_hours))
-        },
-        {
-            name: t('late'),
-            data: data.map(item => parseFloat(item.late_hours))
-        }
-    ];
 
     const labelColor = resolvedTheme === 'dark' ? '#ffffff' : '#333333';
 
-    const options: ApexOptions = {
+    const series = useMemo(() => [
+        {
+            name: t('worked'),
+            data: daily_stats.map(item => parseFloat(item.worked_hours) || 0)
+        },
+        {
+            name: t('break'),
+            data: daily_stats.map(item => parseFloat(item.break_hours) || 0)
+        },
+        {
+            name: t('late'),
+            data: daily_stats.map(item => parseFloat(item.late_hours) || 0)
+        }
+    ], [daily_stats, t]);
+
+    const options: ApexOptions = useMemo(() => ({
         chart: {
             type: 'bar' as const,
             foreColor: labelColor,
-            height: 350
+            height: 350,
+            toolbar: {
+                show: false
+            }
         },
         xaxis: {
-            type: 'category',
-            categories: data.map(item => item.worked_date)
+            type: 'category' as const,
+            categories: daily_stats.map(item => item.worked_date),
+            labels: {
+                style: {
+                    colors: labelColor
+                }
+            }
         },
         yaxis: {
             title: {
@@ -56,12 +61,16 @@ const WorkTimeChart = ({ daily_stats }: Props) => {
                 }
             },
             labels: {
-                formatter: (val: number) => val.toFixed(1) // ✅ One decimal place
+                style: {
+                    colors: labelColor
+                },
+                formatter: (val: number) => val.toFixed(1)
             }
         },
         tooltip: {
+            theme: resolvedTheme as 'dark' | 'light',
             y: {
-                formatter: (val: number) => val.toFixed(1) // ✅ One decimal place in hover tooltip
+                formatter: (val: number) => val.toFixed(1)
             }
         },
         legend: {
@@ -75,18 +84,18 @@ const WorkTimeChart = ({ daily_stats }: Props) => {
         plotOptions: {
             bar: {
                 columnWidth: '45%',
-                borderRadius: 5, // 👈 Replaces 'endingShape'
+                borderRadius: 5,
                 distributed: false
             }
         },
         theme: {
             mode: resolvedTheme as 'dark' | 'light'
         },
-        colors: ['#e6746c', '#5373e0', '#60be92'] // 🎨 Custom color per series
-    };
+        colors: ['#e6746c', '#5373e0', '#60be92']
+    }), [daily_stats, labelColor, t, resolvedTheme]);
 
     return (
-        <div>
+        <div className="p-4">
             <Chart options={options} series={series} type="bar" height={350} />
         </div>
     );
