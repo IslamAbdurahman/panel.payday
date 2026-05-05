@@ -106,10 +106,14 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                             <DatePicker
                                 id="from-date"
                                 placeholderText={t('from')}
-                                value={data.from}
+                                selected={data.from ? new Date(data.from) : null}
                                 onChange={(from) => {
-                                    setData('from', from ? format(from, 'yyyy-MM-dd') : '');
+                                    setData('from', from ? format(from, 'yyyy-MM-dd HH:mm:ss') : '');
                                 }}
+                                showTimeSelect
+                                timeFormat="HH:mm"
+                                timeIntervals={15}
+                                dateFormat="yyyy-MM-dd HH:mm"
                                 className="rounded border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
                             />
                         )}
@@ -120,10 +124,14 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                             <DatePicker
                                 id="to-date"
                                 placeholderText={t('to')}
-                                value={data.to}
+                                selected={data.to ? new Date(data.to) : null}
                                 onChange={(to) => {
-                                    setData('to', to ? format(to, 'yyyy-MM-dd') : '');
+                                    setData('to', to ? format(to, 'yyyy-MM-dd HH:mm:ss') : '');
                                 }}
+                                showTimeSelect
+                                timeFormat="HH:mm"
+                                timeIntervals={15}
+                                dateFormat="yyyy-MM-dd HH:mm"
                                 className="rounded border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
                             />
                         )}
