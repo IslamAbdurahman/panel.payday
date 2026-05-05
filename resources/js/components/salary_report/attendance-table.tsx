@@ -13,6 +13,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Pencil } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import { format, parse } from 'date-fns';
 
 interface AttendanceTableProps extends AttendancePaginate {
     searchData: SearchData;
@@ -159,12 +161,17 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                             </div>
                             <div className="space-y-2">
                                 <Label>{t('to') || 'Ketgan vaqti (Tahrirlash)'}</Label>
-                                <Input
-                                    type="datetime-local"
-                                    value={data.to_datetime}
-                                    onChange={(e) => setData('to_datetime', e.target.value)}
-                                    step="1"
-                                />
+                                <div className="block">
+                                    <DatePicker
+                                        selected={data.to_datetime ? new Date(data.to_datetime) : null}
+                                        onChange={(date) => setData('to_datetime', date ? format(date, 'yyyy-MM-dd HH:mm:ss') : '')}
+                                        showTimeSelect
+                                        timeFormat="HH:mm"
+                                        timeIntervals={1}
+                                        dateFormat="yyyy-MM-dd HH:mm"
+                                        className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                    />
+                                </div>
                                 {errors.to_datetime && <p className="text-sm text-red-500">{errors.to_datetime}</p>}
                             </div>
                         </div>
