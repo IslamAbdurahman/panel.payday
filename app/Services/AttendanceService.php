@@ -27,12 +27,16 @@ class AttendanceService
         }
 
         $orphaned->each(function ($attendance) {
-                $attendance->update([
-                    'to_datetime' => $attendance->from_datetime,
-                    'worked_minutes' => 0,
-                    'comment' => 'Avtomatik yopildi (Checkout unutilgan)'
-                ]);
-            });
+            try {
+                $attendance->to_datetime = $attendance->from_datetime;
+                $attendance->worked_minutes = 0;
+                $attendance->comment = 'Avtomatik yopildi (Checkout unutilgan)';
+                $result = $attendance->save();
+                telegramlog("Orphaned session {$attendance->id} auto-closed: " . ($result ? 'SUCCESS' : 'FAILED'));
+            } catch (\Exception $e) {
+                telegramlog("Failed to auto-close session {$attendance->id}: " . $e->getMessage());
+            }
+        });
 
         // Determine the logical work_date
         // For night shift, if checkIn happens early morning (e.g., 01:00 AM), it might be for yesterday's shift if they are extremely late, 
