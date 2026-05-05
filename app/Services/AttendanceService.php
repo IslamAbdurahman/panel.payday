@@ -25,7 +25,7 @@ class AttendanceService
             ->whereNull('to_datetime')
             ->pluck('from_datetime', 'id');
 
-            telegramlog("Orphaned IDs: " . json_encode($orphanedIds));
+            telegramlog("Orphaned IDs: ");
 
         if ($orphanedIds->isNotEmpty()) {
             foreach ($orphanedIds as $id => $fromDatetime) {
