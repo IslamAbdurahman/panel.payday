@@ -32,6 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('worker', \App\Http\Controllers\Worker\WorkerController::class);
     Route::resource('worker_holiday', \App\Http\Controllers\Worker\WorkerHolidayController::class);
     Route::resource('salary', \App\Http\Controllers\Salary\SalaryController::class);
+    Route::get('salary_payment/worker_balance/{worker}', [\App\Http\Controllers\Salary\SalaryPaymentController::class, 'workerBalance'])->name('salary_payment.worker_balance');
     Route::resource('salary_payment', \App\Http\Controllers\Salary\SalaryPaymentController::class);
     Route::resource('hikvision_access_event', \App\Http\Controllers\Hikvision\HikvisionAccessEventController::class);
 

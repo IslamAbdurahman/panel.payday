@@ -7,6 +7,7 @@ use App\Http\Requests\StoreFaceRectRequest;
 use App\Http\Requests\UpdateFaceRectRequest;
 use App\Models\Branch\Branch;
 use App\Models\Firm\Firm;
+use App\Models\Attendance\Attendance;
 use App\Models\Hikvision\FaceRect;
 use App\Models\Hikvision\HikvisionAccess;
 use App\Models\Hikvision\HikvisionAccessEvent;
@@ -251,55 +252,61 @@ class HikvisionController extends Controller
 
                 if ($checkWorker) {
 
-                    $lastHikvisionAccessEvent = HikvisionAccessEvent::with([])
-                        ->where('employeeNoString', '=', $accessEventData->employeeNoString)
-                        ->whereHas('hikvisionAccess', function ($query) use ($eventData) {
-                            $eventTime = isset($eventData->dateTime) ? Carbon::parse($eventData->dateTime) : Carbon::now();
-                            $query->where('dateTime', '>=', $eventTime->copy()->subHours(24))
-                                ->where('dateTime', '<=', $eventTime);
-                        })
-                        ->latest()
+                    // Check for an open attendance session
+                    $openAttendance = Attendance::where('worker_id', $checkWorker->id)
+                        ->whereNull('to_datetime')
+                        ->latest('from_datetime')
                         ->first();
 
-                    $lastStatus = $lastHikvisionAccessEvent ? $lastHikvisionAccessEvent->attendanceStatus : null;
+                    $lastStatus = $openAttendance ? $openAttendance->type : null;
+                    if ($openAttendance && $openAttendance->type === 'work') {
+                        $lastStatus = 'checkIn';
+                    } elseif ($openAttendance && $openAttendance->type === 'break') {
+                        $lastStatus = 'breakIn';
+                    }
 
                     $status = $accessEventData->attendanceStatus;
 
+                    // If a new checkIn comes but there is an open session that is too old (> 16h),
+                    // we allow the new checkIn (AttendanceService will handle closing the old one).
+                    if ($status === 'checkIn' && $openAttendance) {
+                        $hoursOpen = Carbon::parse($openAttendance->from_datetime)->diffInHours(now());
+                        if ($hoursOpen > 16) {
+                            $openAttendance = null;
+                            $lastStatus = 'checkOut'; // Mock last status to allow checkIn
+                        }
+                    }
+
                     switch ($status) {
                         case 'checkIn':
-                            if (is_null($lastStatus) || $lastStatus === 'checkOut') {
+                            if (is_null($openAttendance) || $lastStatus === 'checkOut') {
                                 // checkIn allowed
                             } else {
-                                throw new \Exception('Kelgansiz.');
+                                throw new \Exception('Siz allaqachon kelgansiz.');
                             }
                             break;
 
                         case 'checkOut':
-                            if ($lastStatus === 'checkIn' || $lastStatus === 'breakIn') {
+                            if ($openAttendance && ($lastStatus === 'checkIn' || $lastStatus === 'breakIn' || $lastStatus === 'breakOut')) {
                                 // checkOut allowed
                             } else {
-                                throw new \Exception('Kelmagansiz yoki Abetdasiz.');
+                                throw new \Exception('Kelganingiz qayd etilmagan.');
                             }
                             break;
 
                         case 'breakIn':
-                            if ($lastStatus === 'breakOut') {
-                                // breakIn allowed
-                            } else {
-                                throw new \Exception('Abetda emassiz.');
+                            if ($openAttendance && $lastStatus === 'breakIn') {
+                                throw new \Exception('Siz allaqachon tanaffusdasiz.');
                             }
                             break;
 
                         case 'breakOut':
-                            if ($lastStatus === 'breakIn' || $lastStatus === 'checkIn') {
+                            if ($openAttendance && $lastStatus === 'breakIn') {
                                 // breakOut allowed
                             } else {
-                                throw new \Exception('Abetdasiz.');
+                                throw new \Exception('Tanaffusda emassiz.');
                             }
                             break;
-
-                        default:
-                            throw new \Exception('Noto‘g‘ri attendance holati.');
                     }
 
 

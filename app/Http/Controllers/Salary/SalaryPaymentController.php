@@ -45,11 +45,7 @@ class SalaryPaymentController extends Controller
 
         $firms = Firm::with([]);
         $branches = Branch::with([]);
-        $workers = Worker::with([])
-            ->select(
-                'workers.*',
-                DB::raw("getBalance(workers.id) as balance")
-            );
+        $workers = Worker::with([]);
 
         if (!Auth::user()->hasRole('Admin')) {
             $firms->whereHas('user_firms', function ($query) {
@@ -168,5 +164,12 @@ class SalaryPaymentController extends Controller
                 'error' => [$e->getMessage()],
             ]);
         }
+    }
+
+    public function workerBalance(Worker $worker)
+    {
+        return response()->json([
+            'balance' => DB::selectOne("SELECT getBalance(?) as balance", [$worker->id])->balance
+        ]);
     }
 }

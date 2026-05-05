@@ -17,8 +17,17 @@ class AttendanceService
         $eventTime = $event->hikvisionAccess ? Carbon::parse($event->hikvisionAccess->dateTime) : Carbon::parse($event->created_at);
         $isNightShift = $this->isNightShift($worker);
 
+        // Auto-close any orphaned open sessions
+        Attendance::where('worker_id', $worker->id)
+            ->whereNull('to_datetime')
+            ->update([
+                'to_datetime' => $eventTime,
+                'comment' => 'Avtomatik yopildi (Checkout unutilgan)'
+            ]);
+
         // Determine the logical work_date
-        // Even if it's past midnight for a night shift, the checkIn date is the work_date
+        // For night shift, if checkIn happens early morning (e.g., 01:00 AM), it might be for yesterday's shift if they are extremely late, 
+        // but typically checkIn is today.
         $workDate = $eventTime->toDateString();
 
         // Check if this is the first checkIn for this work_date
@@ -96,11 +105,20 @@ class AttendanceService
     {
         $eventTime = $event->hikvisionAccess ? Carbon::parse($event->hikvisionAccess->dateTime) : Carbon::parse($event->created_at);
         $isNightShift = $this->isNightShift($worker);
+
+        // Auto-close any other orphaned open 'break' sessions
+        Attendance::where('worker_id', $worker->id)
+            ->where('type', 'break')
+            ->whereNull('to_datetime')
+            ->update([
+                'to_datetime' => $eventTime,
+                'comment' => 'Avtomatik yopildi (BreakIn unutilgan)'
+            ]);
         
         // Logical work date is typically today, or yesterday if it's a night shift and past midnight
         $workDate = $eventTime->toDateString();
-        if ($isNightShift && $eventTime->format('H:i:s') <= $worker->end_time) {
-            // It's past midnight of a night shift, the logical work date is yesterday
+        // If night shift and it's morning (before 12:00), the logical work date is yesterday
+        if ($isNightShift && $eventTime->hour < 12) {
             $workDate = $eventTime->copy()->subDay()->toDateString();
         }
 

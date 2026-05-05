@@ -15,6 +15,7 @@ class Attendance extends Model
         'work_time', 'end_time', 'is_night_shift',
         'worked_minutes', 'break_minutes', 'late_minutes',
         'is_first_check_in', 'from_event_id', 'to_event_id',
+        'comment',
     ];
 
     protected $casts = [

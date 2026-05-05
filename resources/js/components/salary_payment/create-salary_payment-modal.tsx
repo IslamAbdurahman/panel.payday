@@ -34,6 +34,8 @@ interface PageProps {
 export default function CreateSalaryPaymentModal({ workers }: PageProps) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
+    const [balance, setBalance] = useState<number | null>(null);
+    const [balanceLoading, setBalanceLoading] = useState(false);
 
     const nameInput = useRef<HTMLInputElement>(null);
 
@@ -43,6 +45,20 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
         comment: ''
     });
 
+    const fetchBalance = async (workerId: number) => {
+        setBalanceLoading(true);
+        try {
+            const response = await fetch(`/salary_payment/worker_balance/${workerId}`);
+            const result = await response.json();
+            setBalance(result.balance);
+        } catch (error) {
+            console.error('Failed to fetch balance:', error);
+            setBalance(null);
+        } finally {
+            setBalanceLoading(false);
+        }
+    };
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
@@ -51,6 +67,7 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
             onSuccess: () => {
                 reset();
                 clearErrors();
+                setBalance(null);
                 setOpen(false); // 🔒 CLOSE MODAL HERE
                 toast.success(t('created_successfully'));
             },
@@ -64,7 +81,13 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => {
+            setOpen(val);
+            if (!val) {
+                reset();
+                setBalance(null);
+            }
+        }}>
             <DialogTrigger asChild>
                 <Button variant="info" size="sm" className="px-2">
                     <IoCreate />
@@ -84,7 +107,9 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
                             value={data.worker_id?.toString() ?? 'placeholder'} // 👈 must be a string
                             onValueChange={(val) => {
                                 if (val === 'placeholder') return;
-                                setData('worker_id', parseInt(val)); // 👈 keep storing as number
+                                const id = parseInt(val);
+                                setData('worker_id', id); // 👈 keep storing as number
+                                fetchBalance(id);
                             }}
                         >
                             <SelectTrigger className="w-full">
@@ -96,11 +121,18 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
                                         key={worker.id}
                                         value={worker.id.toString()} // 👈 must be string to match
                                     >
-                                        {worker.name} ({worker?.balance?.toLocaleString('ru-RU')})
+                                        {worker.name}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {balanceLoading && <p className="text-xs text-gray-500 mt-1">Yuklanmoqda...</p>}
+                        {balance !== null && !balanceLoading && (
+                            <p className="text-xs font-medium text-green-600 dark:text-green-400 mt-1">
+                                {t('balance')}: {balance.toLocaleString('ru-RU')}
+                            </p>
+                        )}
 
                         <InputError message={errors.worker_id} />
                     </div>
