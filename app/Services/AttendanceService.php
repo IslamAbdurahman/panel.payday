@@ -29,7 +29,7 @@ class AttendanceService
             foreach ($orphaned as $attendance) {
                 $attendance->to_datetime = $attendance->from_datetime;
                 $attendance->worked_minutes = 0;
-                $attendance->comment = 'Avtomatik yopildi (Checkout unutilgan)';
+                $attendance->comment = 'Avtomatik yopildi (Chiqish unutilgan)';
                 $attendance->save();
             }
             telegramlog("Auto-closed " . $orphaned->count() . " orphaned sessions for worker {$worker->id}");
@@ -125,7 +125,7 @@ class AttendanceService
                 $attendance->update([
                     'to_datetime' => $attendance->from_datetime,
                     'break_minutes' => 0,
-                    'comment' => 'Avtomatik yopildi (BreakIn unutilgan)'
+                    'comment' => 'Avtomatik yopildi (Chiqish unutilgan)'
                 ]);
             });
         

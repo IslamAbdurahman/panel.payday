@@ -228,6 +228,6 @@
     "select": "Tanlash",
     "edit_attendance": "Davomatni tahrirlash",
     "edit": "Tahrirlash",
-    "auto_closed": "Avtomatik yopildi (Checkout unutilgan)",
+    "auto_closed": "Avtomatik yopildi (Chiqish unutilgan)",
     "edited_auto_closed": "Tahrirlandi: Avtomatik yopildi"
 }

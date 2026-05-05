@@ -91,7 +91,7 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                                                 <span>{item.status}</span>
                                                 {item.comment && (
                                                     <span className="text-xs text-gray-500 italic">
-                                                        {item.comment === 'Avtomatik yopildi (Checkout unutilgan)'
+                                                        {item.comment === 'Avtomatik yopildi (Chiqish unutilgan)'
                                                             ? t('auto_closed')
                                                             : item.comment === 'Tahrirlandi: Avtomatik yopildi'
                                                             ? t('edited_auto_closed')
