@@ -25,6 +25,8 @@ class AttendanceService
             ->whereNull('to_datetime')
             ->pluck('from_datetime', 'id');
 
+            telegramlog("Orphaned IDs: " . json_encode($orphanedIds));
+
         if ($orphanedIds->isNotEmpty()) {
             foreach ($orphanedIds as $id => $fromDatetime) {
                 DB::table('attendances')->where('id', $id)->update([
