@@ -90,7 +90,7 @@ const SalaryTable = ({ searchData, ...salary }: SalaryTableProps) => {
                                     {item.worked_minute} ({~~(item.worked_minute! / 60)} : {item.worked_minute! % 60})
                                 </td>
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {item.break_minute} ({~~(item.worked_minute! / 60)} : {item.worked_minute! % 60})
+                                    {item.break_minute} ({~~(item.break_minute! / 60)} : {item.break_minute! % 60})
                                 </td>
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hour_price}</td>
                                 <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.from}</td>
