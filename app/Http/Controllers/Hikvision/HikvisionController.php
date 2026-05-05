@@ -268,31 +268,13 @@ class HikvisionController extends Controller
 
                     $status = $accessEventData->attendanceStatus;
 
-                    // If a new checkIn comes but there is an open session that is too old (> 16h),
-                    // we allow the new checkIn (AttendanceService will handle closing the old one).
-                    if ($status === 'checkIn' && $openAttendance) {
-                        $newWorkDate = (string)$eventTime->toDateString();
-                        $oldWorkDate = (string)$openAttendance->work_date;
-                        $hoursOpen = $openAttendance->from_datetime->diffInHours($eventTime);
-                        
-                        telegramlog("CheckIn debug: worker={$checkWorker->id}, open_id={$openAttendance->id}, old_date={$oldWorkDate}, new_date={$newWorkDate}, hours_open={$hoursOpen}");
-
-                        if ($oldWorkDate !== $newWorkDate || $hoursOpen > 16) {
-                            telegramlog("Decision: ALLOW new checkIn (old date or >16h)");
-                            $openAttendance = null;
-                            $lastStatus = 'checkOut'; 
-                        } else {
-                            telegramlog("Decision: BLOCK new checkIn (same date and <16h)");
-                        }
-                    }
+                    // checkIn: ALWAYS allow. AttendanceService will auto-close any orphaned sessions.
+                    // No need to block here — the service handles all cleanup.
 
                     switch ($status) {
                         case 'checkIn':
-                            if (is_null($openAttendance) || $lastStatus === 'checkOut') {
-                                // checkIn allowed
-                            } else {
-                                throw new \Exception('Kelgansiz.');
-                            }
+                            // Always allowed. AttendanceService->handleCheckIn() 
+                            // will auto-close any old open sessions.
                             break;
 
                         case 'checkOut':
