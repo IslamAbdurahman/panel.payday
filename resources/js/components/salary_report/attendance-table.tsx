@@ -28,7 +28,9 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
 
     const openEditModal = (item: any) => {
         setEditingAttendance(item);
-        setData('to_datetime', item.to || '');
+        // datetime-local input requires YYYY-MM-DDTHH:MM format
+        const formattedDate = item.to ? item.to.replace(' ', 'T').slice(0, 16) : '';
+        setData('to_datetime', formattedDate);
     };
 
     const closeEditModal = () => {
