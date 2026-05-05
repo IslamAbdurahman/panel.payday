@@ -145,7 +145,7 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
 
             {/* Edit Modal */}
             <Dialog open={!!editingAttendance} onOpenChange={(open) => !open && closeEditModal()}>
-                <DialogContent>
+                <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader>
                         <DialogTitle>{t('edit_attendance') || 'Davomatni tahrirlash'}</DialogTitle>
                     </DialogHeader>
