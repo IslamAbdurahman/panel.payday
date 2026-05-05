@@ -271,15 +271,18 @@ class HikvisionController extends Controller
                     // If a new checkIn comes but there is an open session that is too old (> 16h),
                     // we allow the new checkIn (AttendanceService will handle closing the old one).
                     if ($status === 'checkIn' && $openAttendance) {
-                        $newWorkDate = $eventTime->toDateString();
+                        $newWorkDate = (string)$eventTime->toDateString();
+                        $oldWorkDate = (string)$openAttendance->work_date;
                         $hoursOpen = $openAttendance->from_datetime->diffInHours($eventTime);
                         
-                        telegramlog("CheckIn debug: worker={$checkWorker->id}, open_id={$openAttendance->id}, open_date={$openAttendance->work_date}, new_date={$newWorkDate}, hours_open={$hoursOpen}");
+                        telegramlog("CheckIn debug: worker={$checkWorker->id}, open_id={$openAttendance->id}, old_date={$oldWorkDate}, new_date={$newWorkDate}, hours_open={$hoursOpen}");
 
-                        if ($openAttendance->work_date !== $newWorkDate || $hoursOpen > 16) {
-                            telegramlog("Session for worker {$checkWorker->id} is old or different date. Mocking as closed.");
+                        if ($oldWorkDate !== $newWorkDate || $hoursOpen > 16) {
+                            telegramlog("Decision: ALLOW new checkIn (old date or >16h)");
                             $openAttendance = null;
                             $lastStatus = 'checkOut'; 
+                        } else {
+                            telegramlog("Decision: BLOCK new checkIn (same date and <16h)");
                         }
                     }
 
